@@ -1,13 +1,13 @@
 <template>
   <div class="home">
-    <table id="table" cellpadding="0" cellspacing="0">
+    <table id="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
       <tbody>
         <tr v-for="(trItem, index) in dataTable" :key="index">
           <td v-for="(tdItem, index) in trItem.td" :key="index">
             
-            <table style="width: 100%;" cellpadding="0" cellspacing="0">
+            <table style="width: 100%; border-spacing: 0px" cellpadding="0" cellspacing="0">
               <tr v-for="(trChild, index) in tdItem" :key="index" border="0">
-                <td style="border: 0px;" v-for="(tdChild, index) in trChild" :key="index">{{ tdChild }}</td>
+                <td style="border: 0px; transform: scale(1.3);" v-for="(tdChild, index) in trChild" :key="index">{{ tdChild }}</td>
               </tr>
             </table>
           </td>
@@ -191,18 +191,12 @@ export default {
 </script>
 
 <style>
-.home {
-  display: flex;
-  align-items: center;
-  height: 100vh;
-}
-
 #table {
-  width: 98%;
-  height: 96vh;
+  width: 100%;
   margin: 0px auto 0px;
   border-collapse: collapse;
-  border: 2px solid #000000;
+  border: 1px solid #000000;
+  height: 100vh;
 }
 
 #table td{
@@ -211,18 +205,7 @@ export default {
   text-align: center;
 }
 
-#table > tbody{
-  height: 100%;
-}
-
-#table > tbody > tr{
-  height: 20%;
-}
-
-#table > tbody > tr{
-  height: 20%;
-}
-
+/* 空白边框 */
 #table > tbody > tr:nth-child(1)>td:nth-child(3){
   border-bottom: 1px solid transparent;
 }
