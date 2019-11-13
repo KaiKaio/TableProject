@@ -75,8 +75,8 @@ export default {
                   index: 0, 
                   relation: [
                     {index: 454, relationTo: 510},
-                    {index: 615, relationTo: 398},
-                    {index: 643, relationTo: 55},
+                    {index: 615, relationTo: 490},
+                    {index: 510, relationTo: 615},
                   ]
                 },
                 {
