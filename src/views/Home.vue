@@ -16,7 +16,6 @@
                   <tr v-for="(trChild, index) in tdItem" :key="index" border="0">
                     <td class="font-item" style="border: 0px; transform: scale(1.3);" v-for="(tdChild, index) in trChild" :key="index">
                       <a :class="{active: activeItem === tdChild.index}" @click="clickTdChildItem($event, tdChild)" ref="tdChild" href="javascript:;">{{ tdChild.font }}</a>
-                      <!-- <a ref="tdChild" href="javascript:;">{{ tdChild }}</a> -->
                     </td>
                   </tr>
                 </table>
@@ -25,7 +24,24 @@
           </tbody>
         </table>
       </foreignObject>
-      <line 
+
+      <template >
+        <line
+          v-for="(item, index) in Item.relation"
+          :key="index" 
+          :x1="$refs.tdChild[item.index].getBoundingClientRect().left + 5" 
+          :y1="$refs.tdChild[item.index].getBoundingClientRect().top + 10" 
+          :x2="$refs.tdChild[item.relationTo].getBoundingClientRect().left + 5" 
+          :y2="$refs.tdChild[item.relationTo].getBoundingClientRect().top + 10"
+          :style="{
+            stroke: 'green',
+            opacity: 0.9,
+            strokeWidth: 1
+          }"
+        />
+      </template>
+
+      <!-- <line 
         v-for="(item, index) in renderLines" :key="index"
         :x1="startX" 
         :y1="startY" 
@@ -35,12 +51,7 @@
           stroke: 'green',
           opacity: 0.9,
           strokeWidth: 1
-        }" />
-
-      <!-- <path :d="
-        `M ${startX}, ${startY} 
-        L ${endX}, ${endY}`" stroke="red" stroke-width="3"/> -->
-      <!-- <path d="M 100 350 l 150 -300" stroke="red" stroke-width="3" fill="none" /> -->
+        }" /> -->
     </svg>
   </div>
 </template>
@@ -51,19 +62,81 @@ export default {
   name: 'Home',
   data() {
     return {
+      relationline: [],
       activeItem: '',
       dataTable: [
         {
           td: [
             [
               [
-                {font: '你', index: 0, relation: [454, 510, 55, 398, 615, 643]},
-                {font: '好', index: 1, relation: [529, 382, 201, 50,]},
-                {font: '数', index: 2, relation: [123, 456, 621]},
-                {font: '据', index: 3, relation: [211]},
-                {font: '嗯', index: 4, relation: [451, 300]},
-                {font: '结', index: 5, relation: [400, 187]},
-                {font: '构', index: 6, relation: [611]},
+                {
+                  font: '去', 
+                  self: true, 
+                  index: 0, 
+                  relation: [
+                    {index: 454, relationTo: 510},
+                    {index: 615, relationTo: 398},
+                    {index: 643, relationTo: 55},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 1, 
+                  self: false, 
+                  relation: [
+                    {index: 123, relationTo: 456},
+                    {index: 232, relationTo: 456},
+                    {index: 456, relationTo: 600},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 2, 
+                  self: true, 
+                  relation: [
+                    {index: 111, relationTo: 222},
+                    {index: 333, relationTo: 444},
+                    {index: 555, relationTo: 600},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 3, 
+                  self: false, 
+                  relation: [
+                    {index: 345, relationTo: 123},
+                    {index: 111, relationTo: 232},
+                    {index: 131, relationTo: 454},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 4, 
+                  self: false, 
+                  relation: [
+                    {index: 454, relationTo: 510},
+                    {index: 615, relationTo: 398},
+                    {index: 643, relationTo: 55},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 5, 
+                  relation: [
+                    {index: 454, relationTo: 510},
+                    {index: 615, relationTo: 398},
+                    {index: 643, relationTo: 55},
+                  ]
+                },
+                {
+                  font: '去', 
+                  index: 6, 
+                  relation: [
+                    {index: 454, relationTo: 510},
+                    {index: 615, relationTo: 398},
+                    {index: 643, relationTo: 55},
+                  ]
+                },
               ],
               [
                 {font: '你', index: 7, relation: [15]},
@@ -128,7 +201,7 @@ export default {
                 {font: '据', index: 52, relation: [4]},
                 {font: '嗯', index: 53, relation: [2]},
                 {font: '结', index: 54, relation: [15]},
-                {font: '啦', index: 55, relation: [14]},
+                {font: '球', index: 55, relation: [14]},
               ],
             ],
             '',
@@ -610,7 +683,7 @@ export default {
                 {font: '构', index: 395, relation: [14]},
                 {font: '构', index: 396, relation: [14]},
                 {font: '构', index: 397, relation: [14]},
-                {font: '嗨', index: 398, relation: [15]},
+                {font: '步', index: 398, relation: [15]},
               ],
               [
                 {font: '构', index: 399, relation: [14]},
@@ -687,7 +760,7 @@ export default {
                 {font: '构', index: 451, relation: [14]},
                 {font: '构', index: 452, relation: [14]},
                 {font: '构', index: 453, relation: [14]},
-                {font: '笔', index: 454, relation: [15]},
+                {font: '吃', index: 454, relation: [15]},
               ],
               [
                 {font: '构', index: 455, relation: [14]},
@@ -767,7 +840,7 @@ export default {
                 {font: '构', index: 507, relation: [14]},
                 {font: '构', index: 508, relation: [14]},
                 {font: '构', index: 509, relation: [14]},
-                {font: '梨', index: 510, relation: [15]},
+                {font: '饭', index: 510, relation: [15]},
               ],
               [
                 {font: '构', index: 511, relation: [14]},
@@ -908,7 +981,7 @@ export default {
                 {font: '构', index: 612, relation: [14]},
                 {font: '构', index: 613, relation: [14]},
                 {font: '构', index: 614, relation: [14]},
-                {font: '湿', index: 615, relation: [15]},
+                {font: '散', index: 615, relation: [15]},
               ],
             ],
             [
@@ -946,7 +1019,7 @@ export default {
                 {font: '构', index: 640, relation: [14]},
                 {font: '构', index: 641, relation: [14]},
                 {font: '结', index: 642, relation: [15]},
-                {font: '顾', index: 643, relation: [15]},
+                {font: '打', index: 643, relation: [15]},
               ],
             ],
           ],
@@ -962,27 +1035,54 @@ export default {
       endY: 0,
 
       renderLines: [],
+
+      Item: {},
+
+      activeFonts: [],
     }
   },
   methods: {
     clickTdChildItem(e, item) {
-      this.activeItem = item.index
-      this.startX = e.x
-      this.startY = e.y
-
-      if(this.renderLines.length > 0) {
-        // 清空上一组关联到的Active样式
-        for(let i = 0; i < this.renderLines.length; i++) {
-          this.$refs.tdChild[this.renderLines[i]].className = '';
+      // 重置Active
+      if(this.activeFonts.length > 0) {
+        for(let i = 0; i < this.activeFonts.length; i++) {
+          this.$refs.tdChild[this.activeFonts[i]].className = '';
         }
-        // 清空关联线
-        this.renderLines = [];
+        this.activeFonts = [];
       }
 
-      for(let i = 0; i < item.relation.length; i++) {
-        this.renderLines.push(item.relation[i]);
-        this.$refs.tdChild[item.relation[i]].className = 'active_relation'
+      this.Item = item;
+
+      for(let i = 0; i < item.relation.length; i++){
+        this.$refs.tdChild[item.relation[i].index].className = 'active'
+        this.$refs.tdChild[item.relation[i].relationTo].className = 'active'
+
+        this.activeFonts.push(item.relation[i].relationTo, item.relation[i].index);
       }
+
+      if(this.Item.self === true) {
+        this.$refs.tdChild[item.index].className = 'active'
+        this.activeFonts.push(item.index);
+      }
+
+      // this.activeItem = item.index
+      // this.startX = e.x
+      // this.startY = e.y
+
+      // if(this.renderLines.length > 0) {
+      //   // 清空上一组关联到的Active样式
+      //   for(let i = 0; i < this.renderLines.length; i++) {
+      //     this.$refs.tdChild[this.renderLines[i]].className = '';
+      //   }
+      //   // 清空关联线
+      //   this.renderLines = [];
+      // }
+
+      // for(let i = 0; i < item.relation.length; i++) {
+      //   this.renderLines.push(item.relation[i]);
+      //   this.$refs.tdChild[item.relation[i]].className = 'active_relation'
+      // }
+
     },
   },
 }
@@ -1038,5 +1138,9 @@ export default {
   color: red;
   background-color: skyblue;
   border-radius: 2px;
+}
+
+line {
+  transition: all .3s;
 }
 </style>
