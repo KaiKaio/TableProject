@@ -6,6 +6,7 @@
 
 <style>
 * {
+  font-family: "Microsoft YaHei";
   margin: 0;
   padding: 0;
   font-size: 12px;
