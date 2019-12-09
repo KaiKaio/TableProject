@@ -10,14 +10,19 @@
   margin: 0;
   padding: 0;
   font-size: 12px;
+  line-height: 12px;
 }
+html {
+  /* transform: scale(0.7); */
+}
+
 html, body {
-  height: 100%;
-  width: 100%;
+  /* height: 100%; */
+  /* width: 100%; */
 }
 
 #app{
-  height: 100%;
-  width: 100%;
+  /* height: 100%; */
+  /* width: 100%; */
 }
 </style>

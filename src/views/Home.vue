@@ -1,12 +1,11 @@
 <template>
   <div class="home">
      <svg
-      width="100%"
-      height="130%"
+     class="svg-wrapper"
       xmlns="http://www.w3.org/2000/svg" 
       version="1.1">
 
-      <foreignObject x="0" y="0" width="100%" height="130%">
+      <foreignObject class="foreign" x="0" y="0">
         <!-- <table id="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
           <tbody>
             <tr v-for="(trItem, index) in dataTable" :key="index">
@@ -38,10 +37,10 @@
           </table>
         </div> -->
 
-        <div style="display: flex; flex-wrap: wrap; margin: 0 auto;">
+        <div style="display: flex; flex-wrap: wrap;">
           <table class="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
             <tbody>
-              <tr v-for="(tr, index) in dataTable" :key="index">
+              <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
                 <td 
                   @click="clickTdChildItem($event, td)"  
                   v-for="(td, index) in tr" 
@@ -90,18 +89,19 @@
 
           <marker 
             id="markerArrow" 
-            markerWidth="10" 
-            markerHeight="10" 
+            markerWidth="4" 
+            markerHeight="4" 
             refX="0" 
-            refY="5" 
+            refY="2" 
             orient="auto"
           >
-            <path d="M0,0 L0,10 L10,5 z" style="fill: #000000;" />
+            <path d="M0,0 L0,4 L4,2 z" style="fill: #000000;" />
           </marker>
         </defs>
 
         <line
-          v-for="(item, index) in Item.relation"
+          class="line"
+          v-for="(item, index) in lineArr"
           :key="index" 
           :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
           :y1="$refs.td[item.index].getBoundingClientRect().top + 10" 
@@ -110,7 +110,40 @@
           :style="{
             stroke: 'green',
             opacity: 0.9,
-            strokeWidth: 3
+            strokeWidth: 2
+          }"
+          marker-end="url(#markerArrow)"
+        />
+        <!-- 本字相连字段 -->
+        <line
+          class="line"
+          v-for="(item, index) in Item.self"
+          :key="`${index}self`" 
+          :x1="$refs.td[Item.index].getBoundingClientRect().left + 5" 
+          :y1="$refs.td[Item.index].getBoundingClientRect().top + 10" 
+          :x2="$refs.td[item].getBoundingClientRect().left + 5" 
+          :y2="$refs.td[item].getBoundingClientRect().top + 10"
+          :style="{
+            stroke: 'green',
+            opacity: 0.9,
+            strokeWidth: 2
+          }"
+          marker-end="url(#markerArrow)"
+        />
+
+        <!-- 组合键线段 -->
+        <line
+          class="line"
+          v-for="(item, index) in combination.relation"
+          :key="`${index}combination`" 
+          :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
+          :y1="$refs.td[item.index].getBoundingClientRect().top + 10" 
+          :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
+          :y2="$refs.td[item.to].getBoundingClientRect().top + 10"
+          :style="{
+            stroke: 'green',
+            opacity: 0.9,
+            strokeWidth: 2
           }"
           marker-end="url(#markerArrow)"
         />
@@ -119,6 +152,7 @@
     </svg>
     <button @click="requestData">请求数据</button>
     <button @click="requestAdd">xxx</button>
+    <button @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button>
   </div>
 </template>
 
@@ -145,9 +179,21 @@ export default {
       Item: {},
 
       activeFonts: [],
+      lineArr: [],
+
+      // 已经点击中的字体存入
+      clickFont: [],
+
+      // 组合键返回数据
+      combination: []
     }
   },
   methods: {
+    clear() {
+      console.log('点击清除键')
+      this.clickFont = []
+    },
+
     // clickTdChildItem(e, item) {
     //   console.log(item, 'item')
     //   return
@@ -206,43 +252,90 @@ export default {
       })
     },
     clickTdChildItem(e, item) {
-      if(this.Item) {
-        for(let j = 0; j < this.$refs.td.length; j++) {
-          if(this.$refs.td[j].dataset.index == this.Item.index) {
-            this.$refs.td[j].className = ''
-            break;
-          }
-        }
-      }
-
-      // 清空 relation active 样式
+      // 清空 ActiveFonts 数组变量中的数据
       this.activeFonts = []
+      // 重置样式
       for(let i = 0; i < this.$refs.td.length; i++) {
+        // 如果表格的某个子中有active样式，则清空
         if(this.$refs.td[i].className == 're-active') {
+          this.$refs.td[i].className = ''
+        }
+        // 如果表格的某个子中有active样式，则清空
+        if(this.$refs.td[i].className == 'active') {
+          this.$refs.td[i].className = ''
+        }
+        // 如果表格的某个子中有self-active样式，则清空
+        if(this.$refs.td[i].className == 'self-active') {
           this.$refs.td[i].className = ''
         }
       }
 
-      this.Item = item;
-      console.log(this.Item.relation)
+      // 已经点击中的字体存入该数组中
+      this.clickFont.push(item.index)
 
-      
-      e.target.className = 'active'
-
-      for(let i = 0; i < this.Item.relation.length; i++){
-        this.activeFonts.push(this.Item.relation[i].index)
-        this.activeFonts.push(this.Item.relation[i].to)
-      }
-
-
-      for(let i = 0; i < this.activeFonts.length; i++) {
-        // this.activeFonts 是需要高亮的数组
-        for(let j = 0; j < this.$refs.td.length; j++) {
-          if(this.$refs.td[j].dataset.index == this.activeFonts[i]) {
-            this.$refs.td[j].className = 're-active'
+      if(this.clickFont.length == 1) { // 第一次点击字
+        this.Item = item;
+        // 高亮本字
+        e.target.className = 'active'
+        // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
+        for(let i = 0; i < this.Item.relation.length; i++){
+          this.activeFonts.push(this.Item.relation[i].index)
+          this.activeFonts.push(this.Item.relation[i].to)
+        }
+        // 高亮Relation字段中的每一个字
+        for(let i = 0; i < this.activeFonts.length; i++) {
+          for(let j = 0; j < this.$refs.td.length; j++) {
+            if(this.$refs.td[j].dataset.index == this.activeFonts[i]) {
+              this.$refs.td[j].className = 're-active'
+            }
           }
         }
+
+
+        // 接下来是生成线段
+        this.lineArr = []
+
+        for(let i = 0 ; i < this.Item.relation.length; i++) {
+          if(this.Item.relation[i].index == '' || this.Item.relation[i].to == '') {
+            continue;
+          } else {
+            this.lineArr.push(this.Item.relation[i])
+          }
+        }
+
+        // 生成与本字连接字段
+        for(let i = 0; i < this.Item.self.length; i++) {
+          for(let j = 0; j < this.$refs.td.length; j++) {
+            if(this.$refs.td[j].dataset.index == this.Item.self[i]) {
+              this.$refs.td[j].className = 'self-active'
+            }
+          }
+        }
+      } else { // 第二次点击字
+        // 清空第一次点击字体的线段
+        this.lineArr = []
+        this.Item = ''
+        
+        // 发送组合键查询Ajax
+        this.$axios.post(`http://localhost:3000/combination`, {data: this.clickFont}).then(res => {
+
+          this.combination = res.data.data[0]
+
+          // 高亮Relation字段中的每一个字
+          for(let i = 0; i < this.combination.relation.length; i++) {
+            for(let j = 0; j < this.$refs.td.length; j++) {
+              if(this.$refs.td[j].dataset.index == this.combination.relation[i].index || this.$refs.td[j].dataset.index == this.combination.relation[i].to) {
+                this.$refs.td[j].className = 're-active'
+              }
+            }
+          }
+
+        })
       }
+
+      
+
+
     },
     
   },
@@ -251,18 +344,29 @@ export default {
 
 <style>
 .home {
-  width: 100%;
-  height: 100%;
+  /* width: 100%; */
+  /* height: 100%; */
+  position: relative;
+}
+
+.svg-wrapper {
+  /* width: 110%; */
+  /* height: 110%; */
+  width: 120vw;
+  height: 190vh;
+  transform: scale(0.8) translate(-10px, -20px);
+}
+
+.foreign {
+  width: 120vw;
+  height: 190vh;
 }
 
 .table {
-  width: 100vw;
-  height: 100%;
-  margin: 0px auto 0px;
+  /* width: 100%; */
+  /* height: 100%; */
   border-collapse: collapse;
   border: 1px solid #000000;
-  /* width: 19.7vw; */
-  /* height: 25vh; */
 }
 
 .table td{
@@ -272,10 +376,6 @@ export default {
   cursor: pointer;
 }
 
-/* 空白边框 */
-.table > tbody > tr:nth-child(1)>td:nth-child(3){
-  /* border-bottom: 1px solid transparent; */
-}
 
 #LineCanvas {
   display: block;
@@ -306,8 +406,8 @@ export default {
 
 line {
   transition: all .3s;
+  /* transform: scale(1.42) translate(-12.2%, -8%); */
 }
-
 
 .table td.active{
   color: green;
@@ -318,6 +418,12 @@ line {
 .table td.re-active{
   color: green;
   background-color: skyblue;
+  border-radius: 2px;
+}
+
+.table td.self-active{
+  color: green;
+  background-color: orangered;
   border-radius: 2px;
 }
 </style>
