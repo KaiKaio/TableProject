@@ -1,7 +1,8 @@
 <template>
   <div class="home">
      <svg
-     class="svg-wrapper"
+      v-contextmenu:contextmenu
+      class="svg-wrapper"
       xmlns="http://www.w3.org/2000/svg" 
       version="1.1">
 
@@ -47,6 +48,8 @@
                   :key="index"
                   :data-index="td.index"
                   ref="td"
+                  :style="td.style"
+                  @mousedown.right="mousedown(td)"
                 >
                   {{ td.font }}
                 </td>
@@ -95,7 +98,7 @@
             refY="2" 
             orient="auto"
           >
-            <path d="M0,0 L0,4 L4,2 z" style="fill: #000000;" />
+            <path d="M0,0 L0,4 L4,2 z" style="fill: red;" />
           </marker>
         </defs>
 
@@ -104,9 +107,9 @@
           v-for="(item, index) in lineArr"
           :key="index" 
           :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[item.index].getBoundingClientRect().top + 10" 
+          :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
           :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item.to].getBoundingClientRect().top + 10"
+          :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
           :style="{
             stroke: 'green',
             opacity: 0.9,
@@ -120,11 +123,11 @@
           v-for="(item, index) in Item.self"
           :key="`${index}self`" 
           :x1="$refs.td[Item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[Item.index].getBoundingClientRect().top + 10" 
+          :y1="$refs.td[Item.index].getBoundingClientRect().top + 10 + scrollY" 
           :x2="$refs.td[item].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item].getBoundingClientRect().top + 10"
+          :y2="$refs.td[item].getBoundingClientRect().top + 10 + scrollY"
           :style="{
-            stroke: 'green',
+            stroke: '#000',
             opacity: 0.9,
             strokeWidth: 2
           }"
@@ -137,9 +140,9 @@
           v-for="(item, index) in combination.relation"
           :key="`${index}combination`" 
           :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[item.index].getBoundingClientRect().top + 10" 
+          :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
           :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item.to].getBoundingClientRect().top + 10"
+          :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
           :style="{
             stroke: 'green',
             opacity: 0.9,
@@ -150,18 +153,35 @@
       </template>
 
     </svg>
-    <button @click="requestData">请求数据</button>
-    <button @click="requestAdd">xxx</button>
-    <button @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button>
+
+    <div style="position: absolute; top: 0px; right: 0px;">
+      已选字：
+      <span v-for="(item, index) in clickFontShow" :key="item + index">
+        {{ item }}
+      </span>
+      <!-- <button style="margin-right: 20px;" @click="requestData">请求数据</button> -->
+      <!-- <button style="margin-right: 20px;" @click="requestAdd">增加链接字段</button> -->
+      <!-- <button style="margin-right: 20px;" @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button> -->
+      <!-- <button @click="getScreenHeight">微微获取一下屏幕高度</button> -->
+    </div>
+
+    <v-contextmenu ref="contextmenu">
+      <v-contextmenu-item @click="openLink">打开超链接</v-contextmenu-item>
+      <v-contextmenu-item @click="clear">清除已选数据</v-contextmenu-item>
+      <v-contextmenu-item>取消</v-contextmenu-item>
+    </v-contextmenu>
+
   </div>
 </template>
 
 <script>
-
 export default {
   name: 'Home',
   data() {
     return {
+      scrolled: false, // 监听是否滚动
+      scrollY: 0, // 滚动数值
+
       relationline: [],
       activeItem: '',
       dataTable: [],
@@ -183,15 +203,73 @@ export default {
 
       // 已经点击中的字体存入
       clickFont: [],
+      clickFontShow: [], // 用于展示
 
       // 组合键返回数据
-      combination: []
+      combination: [],
+
+      // 右键选中的Td
+      rightClickTd: ''
     }
   },
+  created () {
+    window.addEventListener('scroll', this.handleScroll);
+  },
+
+  destroyed () {
+    window.removeEventListener('scroll', this.handleScroll);
+  },
+
+  mounted() {
+    this.requestData()
+  },
+
   methods: {
+    handleScroll () {
+      this.scrolled = window.scrollY > 0;
+      this.scrollY = window.scrollY
+    },
+
+    getScreenHeight() {
+      console.log(document.documentElement.clientHeight)
+    },
+
+    mousedown(td) {
+      this.rightClickTd = td
+    },
+
+    openLink() {
+      if(this.rightClickTd.link != '') {
+        window.open(this.rightClickTd.link,'_blank')
+        return
+      } else {
+        window.alert('此字体并未设置超链接')
+        return
+      }
+    },
+
     clear() {
-      console.log('点击清除键')
+      console.log('点击清除')
+      this.Item = ''
       this.clickFont = []
+      this.activeFonts = []
+      this.lineArr = []
+      this.combination = ''
+      // 重置样式
+      for(let i = 0; i < this.$refs.td.length; i++) {
+        // 如果表格的某个子中有active样式，则清空
+        if(this.$refs.td[i].className == 're-active') {
+          this.$refs.td[i].className = ''
+        }
+        // 如果表格的某个子中有active样式，则清空
+        if(this.$refs.td[i].className == 'active') {
+          this.$refs.td[i].className = ''
+        }
+        // 如果表格的某个子中有self-active样式，则清空
+        if(this.$refs.td[i].className == 'self-active') {
+          this.$refs.td[i].className = ''
+        }
+      }
     },
 
     // clickTdChildItem(e, item) {
@@ -273,6 +351,8 @@ export default {
       // 已经点击中的字体存入该数组中
       this.clickFont.push(item.index)
 
+      this.clickFontShow.push(item.font)
+
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item;
         // 高亮本字
@@ -319,26 +399,24 @@ export default {
         // 发送组合键查询Ajax
         this.$axios.post(`http://localhost:3000/combination`, {data: this.clickFont}).then(res => {
 
-          this.combination = res.data.data[0]
-
-          // 高亮Relation字段中的每一个字
-          for(let i = 0; i < this.combination.relation.length; i++) {
-            for(let j = 0; j < this.$refs.td.length; j++) {
-              if(this.$refs.td[j].dataset.index == this.combination.relation[i].index || this.$refs.td[j].dataset.index == this.combination.relation[i].to) {
-                this.$refs.td[j].className = 're-active'
+          if(res.data.data.length > 0) {
+            this.combination = res.data.data[0]
+            // 高亮Relation字段中的每一个字
+            for(let i = 0; i < this.combination.relation.length; i++) {
+              for(let j = 0; j < this.$refs.td.length; j++) {
+                if(this.$refs.td[j].dataset.index == this.combination.relation[i].index || this.$refs.td[j].dataset.index == this.combination.relation[i].to) {
+                  this.$refs.td[j].className = 're-active'
+                }
               }
             }
+          } else {
+            window.alert('没有对应组合键，请右键点击清除已选字体')
           }
-
         })
       }
-
-      
-
-
     },
-    
   },
+
 }
 </script>
 
@@ -352,14 +430,14 @@ export default {
 .svg-wrapper {
   /* width: 110%; */
   /* height: 110%; */
-  width: 120vw;
-  height: 190vh;
-  transform: scale(0.8) translate(-10px, -20px);
+  /* width: 162vw; */
+  /* height: 190vh; */
+  /* transform: scale(0.8) translate(-18rem, -12rem); */
 }
 
 .foreign {
-  width: 120vw;
-  height: 190vh;
+  /* width: 162vw; */
+  /* height: 190vh; */
 }
 
 .table {
@@ -371,9 +449,10 @@ export default {
 
 .table td{
   border-collapse: collapse;
-  border: 1px solid #000000;
+  border: 2px solid #000000;
   text-align: center;
   cursor: pointer;
+  /* padding: 1px; */
 }
 
 
@@ -411,7 +490,7 @@ line {
 
 .table td.active{
   color: green;
-  background-color: yellow;
+  background-color: pink;
   border-radius: 2px;
 }
 
@@ -422,8 +501,85 @@ line {
 }
 
 .table td.self-active{
-  color: green;
-  background-color: orangered;
+  color: teal;
+  background-color: yellow;
   border-radius: 2px;
+}
+
+
+
+
+/* 在 1920 像素以上的的屏幕里 */
+@media screen and (min-width: 1920px) {
+  .svg-wrapper {
+    width: 110vw;
+    height: 120vh;
+    /* transform: scale(0.81) translate(-21rem, -12rem); */
+  }
+  .foreign {
+    width: 100%;
+    height: 100%;
+  }
+  line {
+    transition: all .3s;
+    /* transform: scale(1.23) translate(-1.2rem, -0.9rem); */
+  }
+}
+
+@media (min-width: 1600px) and (max-width: 1919px) {
+  .svg-wrapper {
+    width: 146vw;
+    height: 145vh;
+    transform: scale(0.68) translate(-45rem, -25rem);
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .foreign {
+    width: 146vw;
+    height: 145vh;
+  }
+  line {
+    transition: all .3s;
+    transform: scale(1.46) translate(-0.2rem, -0.6rem);
+  }
+}
+
+@media (min-width: 1440px) and (max-width: 1599px) {
+  .svg-wrapper {
+    width: 162vw;
+    height: 182vh;
+    transform: scale(0.58) translate(-62rem, -40rem);
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .foreign {
+    width: 162vw;
+    height: 182vh;
+  }
+  line {
+    transition: all .3s;
+    transform: scale(1.72) translate(-4.8rem, -2.1rem);
+  }
+}
+
+@media (min-width: 1366px) and (max-width: 1439px) {
+  .svg-wrapper {
+    width: 162vw;
+    height: 182vh;
+    transform: scale(0.58) translate(-62rem, -41rem);
+    position: absolute;
+    top: 0;
+    left: 0;
+  }
+  .foreign {
+    width: 162vw;
+    height: 182vh;
+  }
+  line {
+    transition: all .3s;
+    transform: scale(1.72) translate(-4.6rem, -5.3rem);
+  }
 }
 </style>

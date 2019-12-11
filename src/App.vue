@@ -14,6 +14,7 @@
 }
 html {
   /* transform: scale(0.7); */
+  font-size: 62.5%;
 }
 
 html, body {
