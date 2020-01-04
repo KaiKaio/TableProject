@@ -1,34 +1,42 @@
 <template>
   <div class="home">
      <svg
+      width="100%"
+      height="100%"
       v-contextmenu:contextmenu
-      class="svg-wrapper"
       xmlns="http://www.w3.org/2000/svg" 
       version="1.1">
 
-      <foreignObject class="foreign" x="0" y="0">
-        <div style="display: flex; flex-wrap: wrap;">
-          <table class="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
-            <tbody>
-              <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
-                <td 
-                  @click="clickTdChildItem($event, td)"  
-                  v-for="(td, index) in tr" 
-                  :key="index"
-                  :data-index="td.index"
-                  ref="td"
-                  :style="td.style"
-                  @mousedown.right="mousedown(td)"
-                >
-                  {{ td.font }}
-                </td>
-              </tr>
-            </tbody>
-          </table>
+      <foreignObject class="foreign" x="0" y="0" width="100%" height="100%">
+        <table class="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
+          <tbody>
+            <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
+              <td 
+                @click="clickTdChildItem(td)"  
+                v-for="(td, index) in tr" 
+                :key="index"
+                :data-index="td.index"
+                ref="td"
+                :style="td.style"
+                @mousedown.right="mousedown(td)"
+              >
+                {{ td.font }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+
+        <!-- 清除区 -->
+        <div @click="clear" class="clear-area" ref="clearArea">
+          清除键
         </div>
 
-
-
+        <!-- 空白区 -->
+        <div class="air-area" ref="airArea">
+          <img :src="imgSrc" style="width: 100%;" alt="">
+          <div @click="handleChangePage('left')" class="page-button left">左</div>
+          <div @click="handleChangePage('right')" class="page-button right">右</div>
+        </div>
       </foreignObject>
 
       <!-- 连线 -->
@@ -112,11 +120,13 @@
     </svg>
 
     <div style="position: absolute; top: 0px; right: 0px;">
-      <!-- <button style="margin-right: 20px;" @click="requestData">请求数据</button> -->
-      <!-- <button style="margin-right: 20px;" @click="requestAdd">增加链接字段</button> -->
+      <!-- <button style="" @click="requestData">请求数据</button> -->
+      <!-- <button style="padding: 10px; margin-right: 20px; z-index: 10; background: #fff; color: #000;" @click="requestAdd">增加小表格表数据</button> -->
       <!-- <button style="margin-right: 20px;" @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button> -->
       <!-- <button @click="getScreenHeight">微微获取一下屏幕高度</button> -->
     </div>
+
+    
 
     <v-contextmenu ref="contextmenu">
       <v-contextmenu-item @click="openLink">打开超链接</v-contextmenu-item>
@@ -129,7 +139,7 @@
 
 <script>
 export default {
-  name: 'Home',
+  name: 'M',
   data() {
     return {
       scrolled: false, // 监听是否滚动
@@ -161,7 +171,19 @@ export default {
       combination: [],
 
       // 右键选中的Td
-      rightClickTd: ''
+      rightClickTd: '',
+
+      airWidth: 0,
+      airHeight: 0,
+      airLeft: 0,
+
+
+      clearWidth: 0,
+      clearHeight: 0,
+      clearTop: 0,
+
+      imgSrc: '',
+      delFont: [], // 被删除的字
     }
   },
   created () {
@@ -173,10 +195,45 @@ export default {
   },
 
   mounted() {
-    this.requestData()
+    this.requestData().then(() => {
+      this.computedArea() // 计算空白区域
+    })
   },
 
   methods: {
+    handleChangePage(arrow) {
+      // 重置数据
+      if(arrow == 'left') {
+        console.log('后退')
+        this.delFont.unshift(this.clickFont.pop())
+
+        let FontArr = this.clickFont // 创建临时数组来map循环才对
+
+        this.clear() // 清空数组
+
+        setTimeout(() => {
+          FontArr.map(item => {
+            let index = item
+            let trLine = Math.floor(index / 45)
+            let tdCol = index % 45
+            this.clickTdChildItem(this.dataTable[trLine][tdCol])
+          })
+        }, 1000)
+
+      } else if (arrow == 'right') {
+        if(this.delFont.length === 0) {
+          console.log('没有前进')
+        } else {
+          console.log('前进')
+          let index = this.delFont[0]
+          let trLine = Math.floor(index / 45)
+          let tdCol = index % 45
+          this.clickTdChildItem(this.dataTable[trLine][tdCol])
+          this.delFont.shift() // 删除（被删数组）第一项
+        }
+      }
+    },
+
     handleScroll () {
       this.scrolled = window.scrollY > 0;
       this.scrollY = window.scrollY
@@ -222,37 +279,69 @@ export default {
           this.$refs.td[i].className = ''
         }
       }
+      this.requestData()
+      this.imgSrc = ''
     },
 
     // 大表格第一版本
       requestAdd() {
-        // this.$axios.post('http://localhost:3000', {
+        // this.$axios.post('http://localhost:3000/111', {
         //   font: '张'
         // }).then(res => {
         //   console.log(res)
         // })
+
         this.$axios.post('http://localhost:3000/111').then(res => {
           console.log(res)
         })
       },
-      // requestData() {
-      //   for(let i = 0; i < 19; i ++) {
-      //     this.$axios.get(`http://localhost:3000?page=${i}`).then(res => {
-      //       this.dataTable.push(res.data.data);
-      //     })
-      //   }
-      //   setTimeout(() => {
-      //     this.dataTable.splice(17, 0, '')
-      //   }, 5000)
-      // }
 
     // 第二版本
     requestData() {
-      this.$axios.get(`http://localhost:3000/tableData`).then(res => {
-        this.dataTable = res.data.data
+      return new Promise((resolve, reject) => {
+        this.$axios.get(`http://localhost:3000/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://192.168.1.8:3000/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://10.254.75.27:3000/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://172.20.10.2:3000/tableDataMobile`).then(res => {
+          this.dataTable = res.data.data
+          resolve('获取成功')
+        }).catch((err) => {
+          console.log(err, '获取表格数据失败')
+          reject('获取失败')
+        })
       })
     },
-    clickTdChildItem(e, item) {
+
+    computedArea() {
+      // 计算单个单元格宽高，设置空白区域长宽
+      this.airWidth = this.$refs.td[19].getBoundingClientRect().width
+      this.airHeight = this.$refs.td[1054].getBoundingClientRect().height
+
+
+      this.$refs.airArea.style.width = this.airWidth * 9  + 'px'
+      this.$refs.airArea.style.height = this.airHeight * 6 + 'px'
+      this.airLeft = this.$refs.td[19].getBoundingClientRect().left
+      this.$refs.airArea.style.left = this.airLeft + 'px'
+
+
+      // 设置清除区
+      this.clearWidth = this.$refs.td[495].getBoundingClientRect().width
+      this.clearHeight = this.$refs.td[495].getBoundingClientRect().height
+      this.$refs.clearArea.style.width = this.clearWidth * 5  + 'px'
+      this.$refs.clearArea.style.height = this.clearHeight * 4 + 'px'
+      this.$refs.clearArea.style.top = this.$refs.td[495].getBoundingClientRect().top + 'px'
+    },
+
+    clickTdChildItem(item) {
+      console.log(item, '点击的字')
+
+      item.change.map(item => {
+        let index =  item.index
+        let trLine = Math.floor(index / 45)
+        let tdCol = index % 45
+        this.dataTable[trLine][tdCol].font = item.change // 改变字体
+      })
+    
       // 清空 ActiveFonts 数组变量中的数据
       this.activeFonts = []
       // 重置样式
@@ -275,13 +364,16 @@ export default {
         }
       }
 
+      console.log(this.clickFont, 'this.clickFont前')
       // 已经点击中的字体存入该数组中, 用于传输Ajax查询组合键
       this.clickFont.push(item.index)
+      console.log(this.clickFont, 'this.clickFont后')
 
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item
+
         // 高亮本字
-        e.target.className = 'active'
+        this.$refs.td[this.Item.index].className = 'active'
 
         // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
         for(let i = 0; i < this.Item.relation.length; i++){
@@ -334,26 +426,44 @@ export default {
         // 清空第一次点击字体的线段
         this.lineArr = []
         this.Item = ''
-        
+
         // 发送组合键查询Ajax
-        this.$axios.post(`http://localhost:3000/combination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://172.20.10.2:3000/mcombination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://10.254.75.27:3000/mcombination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://192.168.1.8:3000/mcombination`, {data: this.clickFont}).then(res => {
+        this.$axios.post(`http://localhost:3000/mcombination`, {data: this.clickFont}).then(res => {
 
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
+
+            console.log(this.combination, 'this.combination')
+
+            this.combination.change.map(item => { // 改变字体
+              let index =  item.index
+              let trLine = Math.floor(index / 45)
+              let tdCol = index % 45
+              this.dataTable[trLine][tdCol].font = item.change // 改变字体
+            })
+
+            if(this.combination.img !== '') {
+              this.imgSrc = this.combination.img
+            }
+
             // 高亮Relation字段中的每一个字
             for(let i = 0; i < this.combination.relation.length; i++) {
-              if(this.combination.relation[i].index != '') {
+              if(this.combination.relation[i].index !== '') {
                 this.$refs.td[this.combination.relation[i].index].className = 're-active'
               }
 
-              if(this.combination.relation[i].to!= '') {
+              if(this.combination.relation[i].to !== '') {
                 this.$refs.td[this.combination.relation[i].to].className = 're-active'
               }
             }
+
           } else {
             console.log('没有对应组合键，自动清除已选字体')
             this.clear()
-            this.clickTdChildItem(e, item)
+            this.clickTdChildItem(item)
           }
         })
 
@@ -365,36 +475,43 @@ export default {
 </script>
 
 <style>
+html, body {
+  width: 100%;
+  height: 100%;
+}
+
+#app{
+  width: 100%;
+  height: 100%;
+}
+
 .home {
-  /* width: 100%; */
-  /* height: 100%; */
+  width: 100%;
+  height: 100%;
   position: relative;
 }
 
-.svg-wrapper {
-  /* width: 110%; */
-  /* height: 110%; */
-  /* width: 162vw; */
-  /* height: 190vh; */
-  /* transform: scale(0.8) translate(-18rem, -12rem); */
+.air-area {
+  position: absolute;
+  bottom: 0rem;
+  background: #FFF;
 }
 
-.foreign {
-  /* width: 162vw; */
-  /* height: 190vh; */
+.clear-area {
+  position: absolute;
+  left: 0rem;
+  background: #FFF;
 }
 
 .table {
-  /* width: 100%; */
-  /* height: 100%; */
-  border: 1px solid #000000;
+  width: 100%;
+  height: 100%;
 }
 
 .table td{
-  border: 0.1rem solid #000000;
+  border: 0.1rem solid #000;
   text-align: center;
   cursor: pointer;
-  /* padding: 1px; */
 }
 
 
@@ -427,7 +544,6 @@ export default {
 
 line {
   transition: all .3s;
-  /* transform: scale(1.42) translate(-12.2%, -8%); */
 }
 
 .table td.active{
@@ -437,8 +553,8 @@ line {
 }
 
 .table td.re-active{
-  color: fuchsia;
-  background-color: skyblue;
+  color: #fff;
+  background-color: rgb(139, 86, 86);
   border-radius: 2px;
 }
 
@@ -448,80 +564,19 @@ line {
   border-radius: 2px;
 }
 
-
-
-
-/* 在 1920 像素以上的的屏幕里 */
-@media screen and (min-width: 1920px) {
-  .svg-wrapper {
-    width: 110vw;
-    height: 120vh;
-    /* transform: scale(0.81) translate(-21rem, -12rem); */
-  }
-  .foreign {
-    width: 100%;
-    height: 100%;
-  }
-  line {
-    transition: all .3s;
-    /* transform: scale(1.23) translate(-1.2rem, -0.9rem); */
-  }
+.page-button {
+  position: absolute;
+  top: 0rem;
+  width: 50%;
+  text-align: center;
+  height: 100%;
 }
 
-@media (min-width: 1600px) and (max-width: 1919px) {
-  .svg-wrapper {
-    width: 146vw;
-    height: 145vh;
-    transform: scale(0.68) translate(-45rem, -25rem);
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  .foreign {
-    width: 146vw;
-    height: 145vh;
-  }
-  line {
-    transition: all .3s;
-    transform: scale(1.46) translate(-0.2rem, -0.6rem);
-  }
+.page-button.left {
+  left: 0px;
 }
 
-@media (min-width: 1440px) and (max-width: 1599px) {
-  .svg-wrapper {
-    width: 162vw;
-    height: 182vh;
-    transform: scale(0.58) translate(-62rem, -40rem);
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  .foreign {
-    width: 162vw;
-    height: 182vh;
-  }
-  line {
-    transition: all .3s;
-    transform: scale(1.72) translate(-4.8rem, -2.1rem);
-  }
-}
-
-@media (min-width: 1366px) and (max-width: 1439px) {
-  .svg-wrapper {
-    width: 162vw;
-    height: 182vh;
-    transform: scale(0.58) translate(-62rem, -41rem);
-    position: absolute;
-    top: 0;
-    left: 0;
-  }
-  .foreign {
-    width: 162vw;
-    height: 182vh;
-  }
-  line {
-    transition: all .3s;
-    transform: scale(1.72) translate(-4.6rem, -5.3rem);
-  }
+.page-button.right {
+  right: 0px;
 }
 </style>
