@@ -1,5 +1,5 @@
 <template>
-  <div class="home">
+  <div ref="home" class="home">
      <svg
       width="100%"
       height="100%"
@@ -18,7 +18,7 @@
                 :data-index="td.index"
                 ref="td"
                 :style="td.style"
-                @mousedown.right="mousedown(td)"
+                @touchstart="mousedown(td)"
               >
                 {{ td.font }}
               </td>
@@ -27,16 +27,17 @@
         </table>
 
         <!-- 清除区 -->
-        <div @click="clear" class="clear-area" ref="clearArea">
+        <!-- <div @click="clear" class="clear-area" ref="clearArea">
           清除键
-        </div>
+        </div> -->
 
         <!-- 空白区 -->
-        <div class="air-area" ref="airArea">
+        <!-- <div class="air-area" ref="airArea">
           <img :src="imgSrc" style="width: 100%;" alt="">
           <div @click="handleChangePage('left')" class="page-button left">左</div>
           <div @click="handleChangePage('right')" class="page-button right">右</div>
-        </div>
+        </div> -->
+
       </foreignObject>
 
       <!-- 连线 -->
@@ -67,54 +68,111 @@
           </marker>
         </defs>
 
-        <line
-          class="line"
-          v-for="(item, index) in lineArr"
-          :key="index" 
-          :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
-          :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
-          :style="{
-            stroke: 'green',
-            opacity: 0.9,
-            strokeWidth: 2
-          }"
-          marker-end="url(#markerArrow)"
-        />
-        <!-- 本字相连字段 -->
-        <line
-          class="line"
-          v-for="(item, index) in Item.self"
-          :key="`${index}self`" 
-          :x1="$refs.td[Item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[Item.index].getBoundingClientRect().top + 10 + scrollY" 
-          :x2="$refs.td[item].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item].getBoundingClientRect().top + 10 + scrollY"
-          :style="{
-            stroke: '#000',
-            opacity: 0.9,
-            strokeWidth: 2
-          }"
-          marker-end="url(#markerArrow)"
-        />
 
-        <!-- 组合键线段 -->
-        <line
-          class="line"
-          v-for="(item, index) in combination.relation"
-          :key="`${index}combination`" 
-          :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
-          :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
-          :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
-          :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
-          :style="{
-            stroke: 'green',
-            opacity: 0.9,
-            strokeWidth: 2
-          }"
-          marker-end="url(#markerArrow)"
-        />
+        
+        <template v-if="screenStatus === true">
+          <line
+            class="line"
+            v-for="(item, index) in lineArr"
+            :key="index" 
+            :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
+            :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
+            :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
+            :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
+            :style="{
+              stroke: 'green',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+          <!-- 本字相连字段 -->
+          <line
+            class="line"
+            v-for="(item, index) in Item.self"
+            :key="`${index}self`" 
+            :x1="$refs.td[Item.index].getBoundingClientRect().left + 5" 
+            :y1="$refs.td[Item.index].getBoundingClientRect().top + 10 + scrollY" 
+            :x2="$refs.td[item].getBoundingClientRect().left + 5" 
+            :y2="$refs.td[item].getBoundingClientRect().top + 10 + scrollY"
+            :style="{
+              stroke: '#000',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+
+          <!-- 组合键线段 -->
+          <line
+            class="line"
+            v-for="(item, index) in combination.relation"
+            :key="`${index}combination`" 
+            :x1="$refs.td[item.index].getBoundingClientRect().left + 5" 
+            :y1="$refs.td[item.index].getBoundingClientRect().top + 10 + scrollY" 
+            :x2="$refs.td[item.to].getBoundingClientRect().left + 5" 
+            :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
+            :style="{
+              stroke: 'green',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+        </template>
+
+        <template v-else>
+          <line
+            class="line"
+            v-for="(item, index) in lineArr"
+            :key="index" 
+            :x1="$refs.td[item.index].offsetLeft + 5" 
+            :y1="$refs.td[item.index].offsetTop + 10 + scrollY" 
+            :x2="$refs.td[item.to].offsetLeft + 5" 
+            :y2="$refs.td[item.to].offsetTop + 10 + scrollY"
+            :style="{
+              stroke: 'green',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+          <!-- 本字相连字段 -->
+          <line
+            class="line"
+            v-for="(item, index) in Item.self"
+            :key="`${index}self`" 
+            :x1="$refs.td[Item.index].offsetLeft + 5" 
+            :y1="$refs.td[Item.index].offsetTop + 10 + scrollY" 
+            :x2="$refs.td[item].offsetLeft + 5" 
+            :y2="$refs.td[item].offsetTop + 10 + scrollY"
+            :style="{
+              stroke: '#000',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+
+          <!-- 组合键线段 -->
+          <line
+            class="line"
+            v-for="(item, index) in combination.relation"
+            :key="`${index}combination`" 
+            :x1="$refs.td[item.index].offsetLeft + 5" 
+            :y1="$refs.td[item.index].offsetTop + 10 + scrollY" 
+            :x2="$refs.td[item.to].offsetLeft + 5" 
+            :y2="$refs.td[item.to].offsetTop + 10 + scrollY"
+            :style="{
+              stroke: 'green',
+              opacity: 0.9,
+              strokeWidth: 1
+            }"
+            marker-end="url(#markerArrow)"
+          />
+        </template>
+
+       
       </template>
 
     </svg>
@@ -184,6 +242,8 @@ export default {
 
       imgSrc: '',
       delFont: [], // 被删除的字
+
+      screenStatus: false, // False为竖屏，True为横屏
     }
   },
   created () {
@@ -196,7 +256,65 @@ export default {
 
   mounted() {
     this.requestData().then(() => {
-      this.computedArea() // 计算空白区域
+      // this.computedArea() // 计算空白区域
+      var width = document.documentElement.clientWidth;
+      var height =  document.documentElement.clientHeight;
+      if(width < height) {
+        this.$refs.home.style.height = width + 'px'
+        this.$refs.home.style.width = height + 'px'
+        this.$refs.home.style.top = (height - width) / 2 + 'px'
+        this.$refs.home.style.left = 0 - (height - width) / 2  + 'px'
+        this.$refs.home.style.transform = 'rotate(90deg)'
+        this.$refs.home.style.transformOrigin = '50% 50%'
+      } else {
+        let _home = this.$refs.home
+        _home.style.height = height + 'px'
+        _home.style.width = width + 'px'
+
+        _home.style.top = '0px'
+        _home.style.left = '0px'
+        
+        _home.style.transform = 'none'
+        _home.style.transformOrigin = '50% 50%'
+      }
+
+      var evt = "onorientationchange" in window ? "orientationchange" : "resize"
+
+      var _home = this.$refs.home
+      window.addEventListener(evt, () => {
+        var width = document.documentElement.clientWidth
+        var height =  document.documentElement.clientHeight
+        if( width < height ){
+          _home.style.height = width + 'px'
+          _home.style.width = height + 'px'
+
+          _home.style.top =  '0px'
+          _home.style.left = '0px'
+          
+          _home.style.transform = 'none'
+          _home.style.transformOrigin = '50% 50%'
+
+          console.log('横屏')
+
+          this.screenStatus = true
+          
+        } else {
+          _home.style.height = height + 'px'
+          _home.style.width = width + 'px'
+
+          _home.style.top = -((height - width) / 2) + 'px'
+          _home.style.left = -(0 - (height - width) / 2)  + 'px'
+          
+          _home.style.transform = 'rotate(90deg)'
+          _home.style.transformOrigin = '50% 50%'
+
+          console.log('竖屏')
+
+          this.screenStatus = false
+          
+        }
+      })
+
     })
   },
 
@@ -248,8 +366,9 @@ export default {
     },
 
     openLink() {
+      console.log(this.rightClickTd.link, '=> this.rightClickTd.link')
       if(this.rightClickTd.link != '') {
-        window.open(this.rightClickTd.link,'_blank')
+        window.open('https://' + this.rightClickTd.link,'_system')
         return
       } else {
         window.alert('此字体并未设置超链接')
@@ -259,50 +378,55 @@ export default {
 
     clear() {
       console.log('点击清除')
-      this.Item = ''
-      this.clickFont = []
-      this.activeFonts = []
-      this.lineArr = []
-      this.combination = ''
-      // 重置样式
-      for(let i = 0; i < this.$refs.td.length; i++) {
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 're-active') {
-          this.$refs.td[i].className = ''
+      return new Promise((resolve) => {
+        this.Item = ''
+        this.clickFont = []
+        this.activeFonts = []
+        this.lineArr = []
+        this.combination = ''
+        // 重置样式
+        for(let i = 0; i < this.$refs.td.length; i++) {
+          // 如果表格的某个子中有active样式，则清空
+          if(this.$refs.td[i].className == 're-active') {
+            this.$refs.td[i].className = ''
+          }
+          // 如果表格的某个子中有active样式，则清空
+          if(this.$refs.td[i].className == 'active') {
+            this.$refs.td[i].className = ''
+          }
+          // 如果表格的某个子中有self-active样式，则清空
+          if(this.$refs.td[i].className == 'self-active') {
+            this.$refs.td[i].className = ''
+          }
         }
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 'active') {
-          this.$refs.td[i].className = ''
-        }
-        // 如果表格的某个子中有self-active样式，则清空
-        if(this.$refs.td[i].className == 'self-active') {
-          this.$refs.td[i].className = ''
-        }
-      }
-      this.requestData()
-      this.imgSrc = ''
+        this.requestData().then(() => {resolve('获取成功')})
+        this.imgSrc = ''
+      })
     },
 
     // 大表格第一版本
-      requestAdd() {
-        // this.$axios.post('http://localhost:3000/111', {
-        //   font: '张'
-        // }).then(res => {
-        //   console.log(res)
-        // })
+    requestAdd() {
+      // this.$axios.post('http://localhost:3000/111', {
+      //   font: '张'
+      // }).then(res => {
+      //   console.log(res)
+      // })
 
-        this.$axios.post('http://localhost:3000/111').then(res => {
-          console.log(res)
-        })
-      },
+      // this.$axios.post('http://localhost:3000/api/111').then(res => {
+      this.$axios.post('http://www.dooor.com/api/111').then(res => {
+        console.log(res)
+      })
+    },
 
     // 第二版本
     requestData() {
       return new Promise((resolve, reject) => {
-        this.$axios.get(`http://localhost:3000/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://www.dooor.com/api/tableDataMobile`).then(res => {
         // this.$axios.get(`http://192.168.1.8:3000/tableDataMobile`).then(res => {
         // this.$axios.get(`http://10.254.75.27:3000/tableDataMobile`).then(res => {
         // this.$axios.get(`http://172.20.10.2:3000/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://192.168.0.105:3000/api/tableDataMobile`).then(res => {
+        this.$axios.get(`http://localhost:3000/api/tableDataMobile`).then(res => {
           this.dataTable = res.data.data
           resolve('获取成功')
         }).catch((err) => {
@@ -333,8 +457,6 @@ export default {
     },
 
     clickTdChildItem(item) {
-      console.log(item, '点击的字')
-
       item.change.map(item => {
         let index =  item.index
         let trLine = Math.floor(index / 45)
@@ -431,7 +553,9 @@ export default {
         // this.$axios.post(`http://172.20.10.2:3000/mcombination`, {data: this.clickFont}).then(res => {
         // this.$axios.post(`http://10.254.75.27:3000/mcombination`, {data: this.clickFont}).then(res => {
         // this.$axios.post(`http://192.168.1.8:3000/mcombination`, {data: this.clickFont}).then(res => {
-        this.$axios.post(`http://localhost:3000/mcombination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://www.dooor.com/api/mcombination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://192.168.1.229:3000/api/mcombination`, {data: this.clickFont}).then(res => {
+        this.$axios.post(`http://localhost:3000/api/mcombination`, {data: this.clickFont}).then(res => {
 
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
@@ -462,8 +586,9 @@ export default {
 
           } else {
             console.log('没有对应组合键，自动清除已选字体')
-            this.clear()
-            this.clickTdChildItem(item)
+            this.clear().then(()=> {
+              this.clickTdChildItem(item)
+            })
           }
         })
 
@@ -474,20 +599,31 @@ export default {
 }
 </script>
 
-<style>
-html, body {
-  width: 100%;
-  height: 100%;
-}
+<style scope>
+/* @media screen and (orientation: portrait) {
+  .home{
+    -webkit-transform:rotate(90deg);
+    -moz-transform: rotate(90deg);
+    -ms-transform: rotate(90deg);
+    transform: rotate(90deg);
 
-#app{
-  width: 100%;
-  height: 100%;
-}
+    去掉overflow 微信显示正常，但是浏览器有问题，竖屏时强制横屏缩小
+    overflow: hidden;
+  }
+} */
+
+/* @media screen and (orientation: landscape) {
+  .home {
+    -webkit-transform:rotate(0);
+    -moz-transform: rotate(0);
+    -ms-transform: rotate(0);
+    transform: rotate(0)
+  }
+} */
 
 .home {
-  width: 100%;
-  height: 100%;
+  /* width: 100vh; */
+  /* height: 100vw; */
   position: relative;
 }
 
@@ -509,9 +645,10 @@ html, body {
 }
 
 .table td{
-  border: 0.1rem solid #000;
+  /* border: 0.1rem solid #000; */
   text-align: center;
   cursor: pointer;
+  font-size: 1.5rem;
 }
 
 
