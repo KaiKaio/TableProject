@@ -30,7 +30,7 @@ export default {
   font-family: "Microsoft YaHei";
   margin: 0;
   padding: 0;
-  font-size: 62.5%;
-  line-height: 1.2rem;
+  font-size: 12px;
+  line-height: 12px;
 }
 </style>

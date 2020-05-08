@@ -267,8 +267,8 @@ export default {
       for(let i = 0; i < queryArr.length; i++) {
         setTimeout(() => {
 
-          tr = ((queryArr[i] / 129).toFixed(0) / 1) // 行数
-          td = queryArr[i] % 129 // 列数
+          tr = (Math.floor(queryArr[i] / 129)) // 行数
+          td = queryArr[i] % 129 // 列数)
 
           this.clickTdChildItem('', this.dataTable[tr][td])
         }, 1200 * i)

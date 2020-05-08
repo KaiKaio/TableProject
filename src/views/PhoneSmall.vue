@@ -32,11 +32,11 @@
         </div> -->
 
         <!-- 空白区 -->
-        <!-- <div class="air-area" ref="airArea">
+        <div class="air-area" ref="airArea">
           <img :src="imgSrc" style="width: 100%;" alt="">
           <div @click="handleChangePage('left')" class="page-button left">左</div>
           <div @click="handleChangePage('right')" class="page-button right">右</div>
-        </div> -->
+        </div>
 
       </foreignObject>
 
@@ -421,12 +421,12 @@ export default {
     // 第二版本
     requestData() {
       return new Promise((resolve, reject) => {
-        // this.$axios.get(`http://www.dooor.com/api/tableDataMobile`).then(res => {
+        this.$axios.get(`http://www.dooor.com/api/tableDataMobile`).then(res => {
         // this.$axios.get(`http://192.168.1.8:3000/tableDataMobile`).then(res => {
         // this.$axios.get(`http://10.254.75.27:3000/tableDataMobile`).then(res => {
         // this.$axios.get(`http://172.20.10.2:3000/tableDataMobile`).then(res => {
         // this.$axios.get(`http://192.168.0.105:3000/api/tableDataMobile`).then(res => {
-        this.$axios.get(`http://localhost:3000/api/tableDataMobile`).then(res => {
+        // this.$axios.get(`http://localhost:3000/api/tableDataMobile`).then(res => {
           this.dataTable = res.data.data
           resolve('获取成功')
         }).catch((err) => {
@@ -459,8 +459,8 @@ export default {
     clickTdChildItem(item) {
       item.change.map(item => {
         let index =  item.index
-        let trLine = Math.floor(index / 45)
-        let tdCol = index % 45
+        let trLine = Math.floor(index / 30)
+        let tdCol = index % 30
         this.dataTable[trLine][tdCol].font = item.change // 改变字体
       })
     
@@ -486,10 +486,9 @@ export default {
         }
       }
 
-      console.log(this.clickFont, 'this.clickFont前')
       // 已经点击中的字体存入该数组中, 用于传输Ajax查询组合键
       this.clickFont.push(item.index)
-      console.log(this.clickFont, 'this.clickFont后')
+      
 
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item
@@ -553,9 +552,9 @@ export default {
         // this.$axios.post(`http://172.20.10.2:3000/mcombination`, {data: this.clickFont}).then(res => {
         // this.$axios.post(`http://10.254.75.27:3000/mcombination`, {data: this.clickFont}).then(res => {
         // this.$axios.post(`http://192.168.1.8:3000/mcombination`, {data: this.clickFont}).then(res => {
-        // this.$axios.post(`http://www.dooor.com/api/mcombination`, {data: this.clickFont}).then(res => {
+        this.$axios.post(`http://www.dooor.com/api/mcombination`, {data: this.clickFont}).then(res => {
         // this.$axios.post(`http://192.168.1.229:3000/api/mcombination`, {data: this.clickFont}).then(res => {
-        this.$axios.post(`http://localhost:3000/api/mcombination`, {data: this.clickFont}).then(res => {
+        // this.$axios.post(`http://localhost:3000/api/mcombination`, {data: this.clickFont}).then(res => {
 
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
@@ -564,8 +563,9 @@ export default {
 
             this.combination.change.map(item => { // 改变字体
               let index =  item.index
-              let trLine = Math.floor(index / 45)
-              let tdCol = index % 45
+              let trLine = Math.floor(index / 29)
+              let tdCol = index % 29
+
               this.dataTable[trLine][tdCol].font = item.change // 改变字体
             })
 
@@ -629,7 +629,9 @@ export default {
 
 .air-area {
   position: absolute;
-  bottom: 0rem;
+  bottom: 64px;
+  width: 126px;
+  left: 256px;
   background: #FFF;
 }
 
@@ -648,7 +650,7 @@ export default {
   /* border: 0.1rem solid #000; */
   text-align: center;
   cursor: pointer;
-  font-size: 1.5rem;
+  font-size: 12px;
 }
 
 
