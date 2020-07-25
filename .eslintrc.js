@@ -1,5 +1,10 @@
 module.exports = {
   root: true,
+  "globals": {
+    "window": true,
+    "document": true,
+    "node": true
+  },
   env: {
     node: true
   },

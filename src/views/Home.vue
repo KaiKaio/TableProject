@@ -50,6 +50,14 @@
                 </tbody>
               </table>
             </div>
+
+            <!-- 空白区 -->
+            <div class="air-area" ref="airArea" :style="{ 
+              backgroundImage: 'url('+  imgSrc + ')',
+              backgroundSize :'cover',
+              backgroundRepeat: 'no-repeat',
+              backgroundPosition: 'center center'
+            }"></div>
           </foreignObject>
 
           <!-- 连线 -->
@@ -193,10 +201,11 @@ export default {
 
       loadComplete: false,
 
-      progressData: {width: '0%'},
-      countAdd: 0, // 进度条值
+      progressData: { width: '0%' },
+      countAdd: '0', // 进度条值
 
-      queryLinkFont: [] // 已选中的字，加入到数组中
+      queryLinkFont: [], // 已选中的字，加入到数组中
+      imgSrc: ''
     }
   },
 
@@ -209,38 +218,15 @@ export default {
   created () {
     window.addEventListener('scroll', this.handleScroll);
 
-    let initTime = setInterval(() => {
-      this.countAdd += 1
-      this.progressData.width = this.countAdd + '%'
-    }, 350)
-
-
-
     this.requestData().then(() => {
-      clearInterval(initTime)
+      this.loadComplete = true
+      setTimeout(() => {
+        this.$refs.svg.setAttribute('width', this.$refs.tableWrapper.clientWidth)
+        this.$refs.svg.setAttribute('height', this.$refs.tableWrapper.clientHeight)
 
-      let secondTime = setInterval(() => {
-        if(this.countAdd === 99) {
-          clearInterval(secondTime)
-
-          setTimeout(() => {
-            this.loadComplete = true
-            setTimeout(() => {
-              this.$refs.svg.setAttribute('width', this.$refs.tableWrapper.clientWidth)
-              this.$refs.svg.setAttribute('height', this.$refs.tableWrapper.clientHeight)
-
-              // 执行Query操作
-              this.fetchQuery()
-            }, 200)
-          }, 1500)
-          
-        }
-        this.countAdd += 1
-        this.progressData.width = this.countAdd + '%'
-      }, 10)
-
-
-      
+        this.computedArea() // 计算图片区
+        this.fetchQuery() // 执行Query操作
+      }, 800)
     })
 
     
@@ -251,6 +237,12 @@ export default {
   },
 
   methods: {
+    // 更新进度条
+    uploadProgress(numStr) {
+      this.countAdd = numStr
+      this.progressData.width = this.countAdd + '%'
+    },
+
     fetchQuery() {
       let query = this.queryFont
 
@@ -274,6 +266,40 @@ export default {
         }, 1200 * i)
       }
 
+    },
+
+    // 计算空白图片区 （横屏）
+    computedArea() { // 参数为竖屏还是横屏
+      let widthArr = []
+      for(let i = 7016; i < 7040; i++) {
+        widthArr.push(i)
+      }
+
+      let widthValue = 0
+      widthArr.map(item => {
+        widthValue += this.$refs.td[item].getBoundingClientRect().width
+      })
+      
+      let heightArr = [7016]
+      for(let i = 1; i < 15; i++) {
+        heightArr.push(7016 + (i * 18))
+      }
+      let heightValue = 0
+      heightArr.map(item => {
+        heightValue += this.$refs.td[item].getBoundingClientRect().height
+      })
+
+      this.airWidth = widthValue // 赋值宽度
+      this.airHeight = heightValue  // 赋值高度
+
+      this.$refs.airArea.style.width = this.airWidth - 3 + 'px' // (并且赋值) -3 是为了适应图片区的Border
+      this.$refs.airArea.style.height = this.airHeight - 3 + 'px' // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+
+      this.airLeft = this.$refs.td[7016].offsetLeft // 计算图片区距离页面最左的距离
+      this.$refs.airArea.style.left = this.airLeft + 'px' // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+
+      this.airTop = this.$refs.td[7016].offsetTop // 计算距离页面顶部的距离
+      this.$refs.airArea.style.top = this.airTop + 'px' // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
     },
     
     handleScroll () {
@@ -326,16 +352,22 @@ export default {
       }
     },
 
-    requestAdd() {
-      this.$axios.post('http://localhost:3000/111').then(() => {
+    // requestAdd() {
+    //   this.$axios.post('http://localhost:3000/111').then(() => {
         
-      })
-    },
+    //   })
+    // },
 
     // 第二版本
     requestData() {
       return new Promise((resolve, reject) => {
-        this.$axios.get(`http://www.dooor.com/api/tableData`).then(res => {
+
+        this.$axios.get(`http://www.dooor.com/api/tableData`, {
+          onDownloadProgress: function (p) {
+            // 对原生进度事件的处理
+            this.uploadProgress((100 * ( p.loaded / p.total )).toFixed(0))
+          }.bind(this),
+        }).then(res => {
         // this.$axios.get(`http://localhost:3000/api/tableData`).then(res => {
           this.dataTable = res.data.data
           resolve('获取成功')
@@ -451,6 +483,11 @@ export default {
 
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
+
+            if(this.combination.img !== '') {
+              this.imgSrc = this.combination.img
+            }
+            
             // 高亮Relation字段中的每一个字
             for(let i = 0; i < this.combination.relation.length; i++) {
               if(this.combination.relation[i].index != '') {
@@ -477,18 +514,15 @@ export default {
 
 <style scope>
 .home {
-  width: 100vw;
-  height: 100vh;
+  position: relative;
 }
 
 .table {
   min-width: 100%;
   min-height: 100%;
-  /* border: 1px solid #000000; */
 }
 
 .table td{
-  /* border: 0.1rem solid #000000; */
   text-align: center;
   cursor: pointer;
 }
@@ -523,7 +557,6 @@ export default {
 
 line {
   transition: all .3s;
-  /* transform: scale(1.42) translate(-12.2%, -8%); */
 }
 
 .table td.active{
@@ -561,9 +594,13 @@ line {
   transition: all .3s;
 }
 
+.air-area {
+  position: absolute;
+}
+
 .fade-transform-leave-active,
 .fade-transform-enter-active {
-  transition: all .5s;
+  transition: all .2s;
 }
 
 .fade-transform-enter {

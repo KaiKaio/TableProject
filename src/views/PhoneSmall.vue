@@ -1,9 +1,9 @@
 <template>
   <div ref="home" class="home">
-     <svg
+    <!-- v-contextmenu:contextmenu -->
+    <svg
       width="100%"
       height="100%"
-      v-contextmenu:contextmenu
       xmlns="http://www.w3.org/2000/svg" 
       version="1.1">
 
@@ -11,16 +11,19 @@
         <table class="table" cellpadding="0" cellspacing="0" style="border-spacing:0px ">
           <tbody>
             <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
-              <td 
-                @click="clickTdChildItem(td)"  
+              <td
                 v-for="(td, index) in tr" 
                 :key="index"
                 :data-index="td.index"
                 ref="td"
                 :style="td.style"
-                @touchstart="mousedown(td)"
+                @touchstart="mousedown($event, td)"
+                @touchend="mousedownEnd(td)"
               >
                 {{ td.font }}
+                <!-- <transition name="fadeSelect">
+                  <div v-show="rightClickTd.index === td.index" class="select-menus" @touchstart="openLink">进入改字超链接</div>
+                </transition> -->
               </td>
             </tr>
           </tbody>
@@ -32,10 +35,15 @@
         </div> -->
 
         <!-- 空白区 -->
-        <div class="air-area" ref="airArea">
-          <img :src="imgSrc" style="width: 100%;" alt="">
-          <div @click="handleChangePage('left')" class="page-button left">左</div>
-          <div @click="handleChangePage('right')" class="page-button right">右</div>
+        <div class="air-area" ref="airArea" :style="{ 
+            backgroundImage: 'url('+  imgSrc + ')',
+            backgroundSize :'cover',
+            backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center center'
+          }">
+          <!-- <img :src="imgSrc" style="width: 100%;" alt=""> -->
+          <!-- <div @click="handleChangePage('left')" class="page-button left">左</div>
+          <div @click="handleChangePage('right')" class="page-button right">右</div> -->
         </div>
 
       </foreignObject>
@@ -172,7 +180,6 @@
           />
         </template>
 
-       
       </template>
 
     </svg>
@@ -181,71 +188,52 @@
       <!-- <button style="" @click="requestData">请求数据</button> -->
       <!-- <button style="padding: 10px; margin-right: 20px; z-index: 10; background: #fff; color: #000;" @click="requestAdd">增加小表格表数据</button> -->
       <!-- <button style="margin-right: 20px;" @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button> -->
-      <!-- <button @click="getScreenHeight">微微获取一下屏幕高度</button> -->
     </div>
 
     
 
-    <v-contextmenu ref="contextmenu">
+    <!-- <v-contextmenu ref="contextmenu">
       <v-contextmenu-item @click="openLink">打开超链接</v-contextmenu-item>
       <v-contextmenu-item @click="clear">清除已选数据</v-contextmenu-item>
       <v-contextmenu-item>取消</v-contextmenu-item>
-    </v-contextmenu>
+    </v-contextmenu> -->
 
   </div>
 </template>
 
 <script>
+import { mapState } from 'vuex'
 export default {
   name: 'M',
   data() {
     return {
       scrolled: false, // 监听是否滚动
       scrollY: 0, // 滚动数值
-
-      relationline: [],
-      activeItem: '',
-      dataTable: [],
-      screenWidth: document.body.clientWidth,
-      screenHeight: document.body.clientHeight,
-      timer: false,
-
-      startX: 0,
-      startY: 0,
-      endX: 0,
-      endY: 0,
-
-      renderLines: [],
-
-      Item: {},
-
-      activeFonts: [],
-      lineArr: [],
-
-      // 已经点击中的字体存入
-      clickFont: [],
-
-      // 组合键返回数据
-      combination: [],
-
-      // 右键选中的Td
-      rightClickTd: '',
-
-      airWidth: 0,
-      airHeight: 0,
-      airLeft: 0,
-
-
-      clearWidth: 0,
-      clearHeight: 0,
-      clearTop: 0,
-
-      imgSrc: '',
-      delFont: [], // 被删除的字
-
-      screenStatus: false, // False为竖屏，True为横屏
+      dataTable: [], // 整个表格的数据
+      Item: {}, // 已经选中的的字体（单体）
+      activeFonts: [], // 高亮的字体（集合）
+      lineArr: [], // 关系线段（集合）
+      clickFont: [], // 已经选中的的字体（集合）
+      combination: [], // Ajax 组合键 返回数据
+      rightClickTd: '', // 长按选中的字体
+      airWidth: 0, // 图片（空白）区宽度
+      airHeight: 0, // 图片（空白）区高度
+      airLeft: 0, // 图片（空白）区距离左侧距离
+      airTop: 0, // 图片（空白）区距离顶部距离
+      imgSrc: '', // Ajax 返回的图片地址
+      delFont: [], // 被删除的字（集合）（历史）
+      screenStatus: false, // 全屏状态（ False为竖屏，True为横屏 ） 
+      startTime: '', // 长按字体开始时间
+      endTime: '' // 长按字体结束时间
     }
   },
+
+  computed: {
+    ...mapState({
+      queryFont: state=> state.queryFont
+    })
+  },
+
   created () {
     window.addEventListener('scroll', this.handleScroll);
   },
@@ -253,37 +241,40 @@ export default {
   destroyed () {
     window.removeEventListener('scroll', this.handleScroll);
   },
-
+  
   mounted() {
+    document.addEventListener('contextmenu', function(e){ // 安卓阻止菜单出现
+      e.preventDefault();
+    }, { passive: false });
+
     this.requestData().then(() => {
-      // this.computedArea() // 计算空白区域
-      var width = document.documentElement.clientWidth;
-      var height =  document.documentElement.clientHeight;
+      let _home = this.$refs.home
+      let width = document.documentElement.clientWidth;
+      let height =  document.documentElement.clientHeight;
       if(width < height) {
-        this.$refs.home.style.height = width + 'px'
-        this.$refs.home.style.width = height + 'px'
-        this.$refs.home.style.top = (height - width) / 2 + 'px'
-        this.$refs.home.style.left = 0 - (height - width) / 2  + 'px'
-        this.$refs.home.style.transform = 'rotate(90deg)'
-        this.$refs.home.style.transformOrigin = '50% 50%'
+        _home.style.height = width + 'px'
+        _home.style.width = height + 'px'
+        _home.style.top = (height - width) / 2 + 'px'
+        _home.style.left = 0 - (height - width) / 2  + 'px'
+        _home.style.transform = 'rotate(90deg)'
+        _home.style.transformOrigin = '50% 50%'
+        this.computedArea('Shu') // 计算空白区域（竖屏幕）
       } else {
-        let _home = this.$refs.home
         _home.style.height = height + 'px'
         _home.style.width = width + 'px'
-
         _home.style.top = '0px'
         _home.style.left = '0px'
-        
         _home.style.transform = 'none'
         _home.style.transformOrigin = '50% 50%'
+        this.computedArea('Heng') // 计算空白区域（横屏幕）
       }
 
-      var evt = "onorientationchange" in window ? "orientationchange" : "resize"
+       // 转屏幕兼容性处理
+      let evt = "onorientationchange" in window ? "orientationchange" : "resize"
 
-      var _home = this.$refs.home
-      window.addEventListener(evt, () => {
-        var width = document.documentElement.clientWidth
-        var height =  document.documentElement.clientHeight
+      window.addEventListener(evt, () => { // 监听转屏
+        let width = document.documentElement.clientWidth
+        let height =  document.documentElement.clientHeight
         if( width < height ){
           _home.style.height = width + 'px'
           _home.style.width = height + 'px'
@@ -294,10 +285,8 @@ export default {
           _home.style.transform = 'none'
           _home.style.transformOrigin = '50% 50%'
 
-          console.log('横屏')
-
           this.screenStatus = true
-          
+          this.computedArea('Heng') // 计算空白区域
         } else {
           _home.style.height = height + 'px'
           _home.style.width = width + 'px'
@@ -307,22 +296,44 @@ export default {
           
           _home.style.transform = 'rotate(90deg)'
           _home.style.transformOrigin = '50% 50%'
-
-          console.log('竖屏')
-
-          this.screenStatus = false
           
+          this.screenStatus = false
+          this.computedArea('Shu') // 计算空白区域
         }
       })
 
+      this.fetchQuery() // 初次进入查询地址栏是否有参数
+    }).catch(err => {
+      throw err
     })
   },
 
   methods: {
+    // 查询地址栏是否有参数
+    fetchQuery() {
+      let query = this.queryFont
+
+      let queryArr = query.split(",")
+      queryArr.pop() // 删除最后一个元素
+
+      let tr = 0
+      let td = 0
+
+      for(let i = 0; i < queryArr.length; i++) {
+        setTimeout(() => {
+
+          tr = (Math.floor(queryArr[i] / 30)) // 行数
+          td = queryArr[i] % 30 // 列数)
+
+          this.clickTdChildItem(this.dataTable[tr][td])
+        }, 1000 * i)
+      }
+
+    },
+
     handleChangePage(arrow) {
       // 重置数据
       if(arrow == 'left') {
-        console.log('后退')
         this.delFont.unshift(this.clickFont.pop())
 
         let FontArr = this.clickFont // 创建临时数组来map循环才对
@@ -340,9 +351,8 @@ export default {
 
       } else if (arrow == 'right') {
         if(this.delFont.length === 0) {
-          console.log('没有前进')
+          return
         } else {
-          console.log('前进')
           let index = this.delFont[0]
           let trLine = Math.floor(index / 45)
           let tdCol = index % 45
@@ -356,19 +366,27 @@ export default {
       this.scrolled = window.scrollY > 0;
       this.scrollY = window.scrollY
     },
-
-    getScreenHeight() {
-      console.log(document.documentElement.clientHeight)
+    
+    mousedown(e) {
+      e.preventDefault() // 阻止长按菜单
+      this.startTime = +new Date()
     },
 
-    mousedown(td) {
-      this.rightClickTd = td
+    mousedownEnd(td){
+      this.endTime = +new Date()
+      if (this.endTime - this.startTime > 700) {
+        this.rightClickTd = td
+        this.openLink()
+      } else {
+        this.clickTdChildItem(td)
+        this.rightClickTd = ''
+      }
     },
 
     openLink() {
-      console.log(this.rightClickTd.link, '=> this.rightClickTd.link')
       if(this.rightClickTd.link != '') {
-        window.open('https://' + this.rightClickTd.link,'_system')
+        // window.open('https://' + this.rightClickTd.link,'_system')
+        window.location.href = 'https://' + this.rightClickTd.link
         return
       } else {
         window.alert('此字体并未设置超链接')
@@ -377,7 +395,6 @@ export default {
     },
 
     clear() {
-      console.log('点击清除')
       return new Promise((resolve) => {
         this.Item = ''
         this.clickFont = []
@@ -413,9 +430,9 @@ export default {
       // })
 
       // this.$axios.post('http://localhost:3000/api/111').then(res => {
-      this.$axios.post('http://www.dooor.com/api/111').then(res => {
-        console.log(res)
-      })
+      // this.$axios.post('http://www.dooor.com/api/111').then(res => {
+        // console.log(res)s
+      // })
     },
 
     // 第二版本
@@ -429,34 +446,81 @@ export default {
         // this.$axios.get(`http://localhost:3000/api/tableDataMobile`).then(res => {
           this.dataTable = res.data.data
           resolve('获取成功')
-        }).catch((err) => {
-          console.log(err, '获取表格数据失败')
+        }).catch(() => {
           reject('获取失败')
         })
       })
     },
 
-    computedArea() {
-      // 计算单个单元格宽高，设置空白区域长宽
-      this.airWidth = this.$refs.td[19].getBoundingClientRect().width
-      this.airHeight = this.$refs.td[1054].getBoundingClientRect().height
+    // 计算空白图片区 （横屏）
+    computedArea(shuHeng) { // 参数为竖屏还是横屏
+      if(shuHeng === 'Heng') {
+        let widthArr = [282, 283, 284, 285, 286, 287]
+        let widthValue = 0
+        widthArr.map(item => {
+          widthValue += this.$refs.td[item].getBoundingClientRect().width
+        })
+        
+        let heightArr = [282, 312, 342, 372, 402, 432]
+        let heightValue = 0
+        heightArr.map(item => {
+          heightValue += this.$refs.td[item].getBoundingClientRect().height
+        })
+
+        this.airWidth = widthValue // 赋值宽度
+        this.airHeight = heightValue  // 赋值高度
+
+        this.$refs.airArea.style.width = this.airWidth - 3 + 'px' // (并且赋值) -3 是为了适应图片区的Border
+        this.$refs.airArea.style.height = this.airHeight - 3 + 'px' // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+
+        this.airLeft = this.$refs.td[282].getBoundingClientRect().left // 计算图片区距离页面最左的距离
+        this.$refs.airArea.style.left = this.airLeft + 3 + 'px' // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+
+        this.airTop = this.$refs.td[282].getBoundingClientRect().top // 计算距离页面顶部的距离
+        this.$refs.airArea.style.top = this.airTop + 3 + 'px' // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+
+      } else if (shuHeng === 'Shu') {
+        let widthArr = [282, 283, 284, 285, 286, 287]
+        let widthValue = 0
+        widthArr.map(item => {
+          widthValue += this.$refs.td[item].getBoundingClientRect().height
+        })
+        
+        let heightArr = [282, 312, 342, 372, 402, 432]
+        let heightValue = 0
+        heightArr.map(item => {
+          heightValue += this.$refs.td[item].getBoundingClientRect().width
+        })
+
+        this.airWidth = widthValue // 赋值宽度
+        this.airHeight = heightValue  // 赋值高度
+
+        this.$refs.airArea.style.width = this.airWidth - 3 + 'px' // (并且赋值) -3 是为了适应图片区的Border
+        this.$refs.airArea.style.height = this.airHeight - 3 + 'px' // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
 
 
-      this.$refs.airArea.style.width = this.airWidth * 9  + 'px'
-      this.$refs.airArea.style.height = this.airHeight * 6 + 'px'
-      this.airLeft = this.$refs.td[19].getBoundingClientRect().left
-      this.$refs.airArea.style.left = this.airLeft + 'px'
+        this.airLeft = this.$refs.td[282].getBoundingClientRect().top // 计算图片区距离页面最左的距离
+        this.$refs.airArea.style.left = this.airLeft + 3 + 'px' // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
 
+        this.airTop = this.$refs.td[432].getBoundingClientRect().left // 计算距离页面顶部的距离
+        this.$refs.airArea.style.top = 'initial' // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+        this.$refs.airArea.style.bottom = this.airTop + 'px' // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      }
+
+      
 
       // 设置清除区
-      this.clearWidth = this.$refs.td[495].getBoundingClientRect().width
-      this.clearHeight = this.$refs.td[495].getBoundingClientRect().height
-      this.$refs.clearArea.style.width = this.clearWidth * 5  + 'px'
-      this.$refs.clearArea.style.height = this.clearHeight * 4 + 'px'
-      this.$refs.clearArea.style.top = this.$refs.td[495].getBoundingClientRect().top + 'px'
+      // this.clearWidth = this.$refs.td[495].getBoundingClientRect().width
+      // this.clearHeight = this.$refs.td[495].getBoundingClientRect().height
+      // this.$refs.clearArea.style.width = this.clearWidth * 5  + 'px'
+      // this.$refs.clearArea.style.height = this.clearHeight * 4 + 'px'
+      // this.$refs.clearArea.style.top = this.$refs.td[495].getBoundingClientRect().top + 'px'
     },
 
     clickTdChildItem(item) {
+
+      // console.log(item, 'item')
+
       item.change.map(item => {
         let index =  item.index
         let trLine = Math.floor(index / 30)
@@ -488,7 +552,13 @@ export default {
 
       // 已经点击中的字体存入该数组中, 用于传输Ajax查询组合键
       this.clickFont.push(item.index)
-      
+
+      let fontArrStr = ''
+      this.clickFont.map(item => {
+        fontArrStr += item + ','
+      })
+
+      this.$router.push({ query: {'font': fontArrStr} });
 
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item
@@ -559,12 +629,12 @@ export default {
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
 
-            console.log(this.combination, 'this.combination')
+            // console.log(this.combination, 'this.combination')
 
             this.combination.change.map(item => { // 改变字体
               let index =  item.index
-              let trLine = Math.floor(index / 29)
-              let tdCol = index % 29
+              let trLine = Math.floor(index / 30)
+              let tdCol = index % 30
 
               this.dataTable[trLine][tdCol].font = item.change // 改变字体
             })
@@ -585,7 +655,7 @@ export default {
             }
 
           } else {
-            console.log('没有对应组合键，自动清除已选字体')
+            // '没有对应组合键，自动清除已选字体'
             this.clear().then(()=> {
               this.clickTdChildItem(item)
             })
@@ -600,6 +670,22 @@ export default {
 </script>
 
 <style scope>
+*{
+-webkit-touch-callout:none; /*系统默认菜单被禁用*/
+-webkit-user-select:none; /*webkit浏览器*/
+-khtml-user-select:none; /*早期浏览器*/
+-moz-user-select:none;/*火狐*/
+-ms-user-select:none; /*IE10*/
+user-select:none;
+}
+
+.fadeSelect-enter-active, .fadeSelect-leave-active {
+  transition: opacity .5s;
+}
+.fadeSelect-enter, .fadeSelect-leave-to /* .fade-leave-active below version 2.1.8 */ {
+  opacity: 0;
+}
+
 /* @media screen and (orientation: portrait) {
   .home{
     -webkit-transform:rotate(90deg);
@@ -629,10 +715,6 @@ export default {
 
 .air-area {
   position: absolute;
-  bottom: 64px;
-  width: 126px;
-  left: 256px;
-  background: #FFF;
 }
 
 .clear-area {
@@ -647,11 +729,36 @@ export default {
 }
 
 .table td{
-  /* border: 0.1rem solid #000; */
   text-align: center;
   cursor: pointer;
   font-size: 12px;
+  position: relative;
 }
+
+.table td .select-menus{
+  position: absolute;
+  top: 0px;
+  left: 100%;
+  background-color: darkcyan;
+  color: #fff;
+  padding: 2px;
+  border-radius: 4px;
+  z-index: 1;
+  font-weight: 200;
+  box-shadow: 2px 2px 9px #aaa;
+}
+
+.table td .select-menus::before{
+  border-top: 5px solid transparent;
+  border-bottom: 5px solid transparent;
+  border-right: 5px solid darkcyan;
+  content: '';
+  display: block;
+  position: absolute;
+  left: -4px;
+  top: 4px;
+}
+
 
 
 #LineCanvas {
@@ -704,18 +811,12 @@ line {
 }
 
 .page-button {
-  position: absolute;
-  top: 0rem;
-  width: 50%;
   text-align: center;
-  height: 100%;
 }
 
 .page-button.left {
-  left: 0px;
 }
 
 .page-button.right {
-  right: 0px;
 }
 </style>
