@@ -1,9 +1,9 @@
 <template>
   <div class="home">
-    <!-- 加载中 -->
     <transition-group name="fade-transform" mode="out-in">
 
-      <template v-if="loadComplete === false">
+      <!-- 加载中 -->
+      <template v-if="!loadComplete">
         <div key="load" style="width: 99vw; height: 99vh; margin: 0 auto; text-align:center;">
           <h1 style="font-size: 3rem; line-height: initial;">www.dooor.com</h1>
           <div style="line-height: initial; font-size: rem;">请等待，数据正在加载中...</div>
@@ -13,7 +13,6 @@
           </div>
 
           <div style="line-height: initial; font-size: 2rem; color: #222;">{{ progressData.width }}</div>
-          
         </div>
       </template>
 
@@ -224,13 +223,8 @@ export default {
       }, 800)
     })
 
-    
   },
-
-  destroyed () {
-    window.removeEventListener('scroll', this.handleScroll);
-  },
-
+  
   methods: {
     // 更新进度条
     uploadProgress(numStr) {
@@ -240,27 +234,20 @@ export default {
 
     fetchQuery() {
       let query = this.queryFont
-
-      // console.log(query, '1')
-
       let queryArr = query.split(",")
       queryArr.pop() // 删除最后一个元素
-
-      // console.log(queryArr, '2')
 
       let tr = 0
       let td = 0
 
       for(let i = 0; i < queryArr.length; i++) {
         setTimeout(() => {
-
           tr = (Math.floor(queryArr[i] / 129)) // 行数
           td = queryArr[i] % 129 // 列数)
 
           this.clickTdChildItem('', this.dataTable[tr][td])
         }, 1200 * i)
       }
-
     },
 
     // 计算空白图片区 （横屏）
@@ -299,7 +286,6 @@ export default {
     
     handleScroll () {
       this.scrolled = window.scrollY > 0;
-
       this.scrollY = window.scrollY
       this.scrollX = window.scrollX
     },
@@ -310,7 +296,7 @@ export default {
 
     openLink() {
       if(this.rightClickTd.link != '') {
-        window.open(this.rightClickTd.link,'_blank')
+        window.open(this.rightClickTd.link, '_blank')
         return
       } else {
         window.alert('此字体并未设置超链接')
@@ -319,39 +305,40 @@ export default {
     },
 
     clear() {
-      // console.log('点击清除')
-      this.Item = ''
-      this.clickFont = []
-      this.queryLinkFont = []
-      this.activeFonts = []
-      this.lineArr = []
-      this.combination = ''
-      // 重置样式
-      for(let i = 0; i < this.$refs.td.length; i++) {
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 're-active') {
-          this.$refs.td[i].className = ''
+      return new Promise((resolve) => {
+        this.Item = ''
+        this.clickFont = []
+        this.queryLinkFont = []
+        this.activeFonts = []
+        this.lineArr = []
+        this.combination = ''
+        // 重置样式
+        for(let i = 0; i < this.$refs.td.length; i++) {
+          // 如果表格的某个子中有active样式，则清空
+          if(this.$refs.td[i].className == 're-active') {
+            this.$refs.td[i].className = ''
+          }
+          // 如果表格的某个子中有active样式，则清空
+          if(this.$refs.td[i].className == 'active') {
+            this.$refs.td[i].className = ''
+          }
+          // 如果表格的某个子中有self-active样式，则清空
+          if(this.$refs.td[i].className == 'self-active') {
+            this.$refs.td[i].className = ''
+          }
         }
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 'active') {
-          this.$refs.td[i].className = ''
-        }
-        // 如果表格的某个子中有self-active样式，则清空
-        if(this.$refs.td[i].className == 'self-active') {
-          this.$refs.td[i].className = ''
-        }
-      }
-      // 重置变字
-      this.changeStorage.map(item => {
-        this.dataTable[item.trLine][item.tdCol].font = item.font
+        // 重置变字
+        this.changeStorage.map(item => {
+          this.dataTable[item.trLine][item.tdCol].font = item.font
+        })
+        this.changeStorage = []
+        resolve()
       })
-      this.changeStorage = []
     },
 
     // 第二版本
     requestData() {
       return new Promise((resolve, reject) => {
-
         this.$axios.get(`http://www.dooor.com/api/tableData`, {
           onDownloadProgress: function (p) {
             // 对原生进度事件的处理
@@ -394,8 +381,7 @@ export default {
       this.clickFont.push(item.index)
 
       // 已经点击中的字体存入该数组中, 用于存入 Query 参数
-      // this.queryLinkFont.push(item)
-      
+
       let fontArrStr = ''
       this.clickFont.map(item => {
         fontArrStr += item + ','
@@ -406,7 +392,6 @@ export default {
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item
         // 高亮本字
-        // e.target.className = 'active'
         this.$refs.td[this.Item.index].className = 'active'
 
         // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
@@ -498,16 +483,18 @@ export default {
               }
             }
           } else {
-            // console.log('没有对应组合键，自动清除已选字体')
-            this.clear()
-            this.clickTdChildItem(e, item)
+            this.clear().then(() => {
+              this.clickTdChildItem(e, item)
+            })
           }
         })
-
       }
     },
   },
 
+  destroyed () {
+    window.removeEventListener('scroll', this.handleScroll);
+  },
 }
 </script>
 
