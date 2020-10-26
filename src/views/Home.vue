@@ -140,13 +140,6 @@
 
         </svg>
 
-        <div key="buttons" style="position: absolute; top: 0px; right: 0px;">
-          <!-- <button style="margin-right: 20px;" @click="requestData">请求数据</button> -->
-          <!-- <button style="margin-right: 20px;" @click="requestAdd">增加链接字段</button> -->
-          <!-- <button style="margin-right: 20px;" @click="clear">告诉你们：这是唯一的清除键，可别给我点错了</button> -->
-          <!-- <button @click="getScreenHeight">微微获取一下屏幕高度</button> -->
-        </div>
-
         <v-contextmenu key="menu" ref="contextmenu">
           <v-contextmenu-item @click="openLink">打开超链接</v-contextmenu-item>
           <v-contextmenu-item @click="clear">清除已选数据</v-contextmenu-item>
@@ -205,7 +198,9 @@ export default {
       countAdd: '0', // 进度条值
 
       queryLinkFont: [], // 已选中的字，加入到数组中
-      imgSrc: ''
+      imgSrc: '',
+
+      changeStorage: [] // Change 变字存储数组
     }
   },
 
@@ -309,10 +304,6 @@ export default {
       this.scrollX = window.scrollX
     },
 
-    getScreenHeight() {
-      // console.log(document.documentElement.clientHeight)
-    },
-
     mousedown(td) {
       this.rightClickTd = td
     },
@@ -350,13 +341,12 @@ export default {
           this.$refs.td[i].className = ''
         }
       }
+      // 重置变字
+      this.changeStorage.map(item => {
+        this.dataTable[item.trLine][item.tdCol].font = item.font
+      })
+      this.changeStorage = []
     },
-
-    // requestAdd() {
-    //   this.$axios.post('http://localhost:3000/111').then(() => {
-        
-    //   })
-    // },
 
     // 第二版本
     requestData() {
@@ -410,15 +400,9 @@ export default {
       this.clickFont.map(item => {
         fontArrStr += item + ','
       })
-
-      // this.queryLinkFont.map(item => {
-      //   fontArrStr += item.font
-      // })
       
       this.$router.push({ query: {'font': fontArrStr} });
-
       
-
       if(this.clickFont.length == 1) { // 第一次点击字
         this.Item = item
         // 高亮本字
@@ -483,6 +467,21 @@ export default {
 
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
+
+            this.combination.change.map(item => { // 改变字体
+              let index =  item.index
+              let trLine = Math.floor(index / 129)
+              let tdCol = index % 129
+
+              this.changeStorage.push({
+                trLine: trLine,
+                tdCol: tdCol,
+                
+                font: JSON.parse(JSON.stringify(this.dataTable[trLine][tdCol].font))
+              })
+
+              this.dataTable[trLine][tdCol].font = item.change // 改变字体
+            })
 
             if(this.combination.img !== '') {
               this.imgSrc = this.combination.img
