@@ -214,13 +214,13 @@ export default {
 
     this.requestData().then(() => {
       this.loadComplete = true
-      setTimeout(() => {
+      this.$nextTick(() => {
         this.$refs.svg.setAttribute('width', this.$refs.tableWrapper.clientWidth)
         this.$refs.svg.setAttribute('height', this.$refs.tableWrapper.clientHeight)
 
         this.computedArea() // 计算图片区
         this.fetchQuery() // 执行Query操作
-      }, 800)
+      })
     })
 
   },
@@ -390,6 +390,9 @@ export default {
       this.$router.push({ query: {'font': fontArrStr} });
       
       if(this.clickFont.length == 1) { // 第一次点击字
+
+        this.changeFont(item.change) // 执行变字逻辑
+
         this.Item = item
         // 高亮本字
         this.$refs.td[this.Item.index].className = 'active'
@@ -453,20 +456,7 @@ export default {
           if(res.data.data.length > 0) {
             this.combination = res.data.data[0]
 
-            this.combination.change.map(item => { // 改变字体
-              let index =  item.index
-              let trLine = Math.floor(index / 129)
-              let tdCol = index % 129
-
-              this.changeStorage.push({
-                trLine: trLine,
-                tdCol: tdCol,
-                
-                font: JSON.parse(JSON.stringify(this.dataTable[trLine][tdCol].font))
-              })
-
-              this.dataTable[trLine][tdCol].font = item.change // 改变字体
-            })
+            this.changeFont(this.combination.change) // 执行变字逻辑
 
             if(this.combination.img !== '') {
               this.imgSrc = this.combination.img
@@ -489,6 +479,27 @@ export default {
           }
         })
       }
+    },
+
+    /**
+     * @method 变字逻辑
+     * @param {Array} changelist 所需变字列表
+     */
+    changeFont(changeList = []) {
+      changeList.map(item => { // 改变字体
+        let index =  item.index
+        let trLine = Math.floor(index / 129)
+        let tdCol = index % 129
+
+        this.changeStorage.push({
+          trLine: trLine,
+          tdCol: tdCol,
+          
+          font: JSON.parse(JSON.stringify(this.dataTable[trLine][tdCol].font))
+        })
+
+        this.dataTable[trLine][tdCol].font = item.change // 改变字体
+      })
     },
   },
 
