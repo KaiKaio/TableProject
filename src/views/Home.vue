@@ -102,23 +102,6 @@
               }"
               marker-end="url(#markerArrow)"
             />
-            <!-- 本字相连字段 -->
-            <line
-              class="line"
-              v-for="(item, index) in Item.self"
-              :key="`${index}self`" 
-              :x1="$refs.td[Item.index].getBoundingClientRect().left + 5 + scrollX" 
-              :y1="$refs.td[Item.index].getBoundingClientRect().top + 10 + scrollY" 
-              :x2="$refs.td[item].getBoundingClientRect().left + 5 + scrollX" 
-              :y2="$refs.td[item].getBoundingClientRect().top + 10 + scrollY"
-              :style="{
-                stroke: '#000',
-                opacity: 0.9,
-                strokeWidth: 1
-              }"
-              marker-end="url(#markerArrow)"
-            />
-
             <!-- 组合键线段 -->
             <line
               class="line"
@@ -199,7 +182,8 @@ export default {
       queryLinkFont: [], // 已选中的字，加入到数组中
       imgSrc: '',
 
-      changeStorage: [] // Change 变字存储数组
+      changeStorage: [], // Change 变字存储数组
+      customBgColorList: [], // 自定义背景色列表
     }
   },
 
@@ -304,48 +288,32 @@ export default {
       }
     },
 
+    /**
+     * @method 重置点击
+     */
     clear() {
-      return new Promise((resolve) => {
-        this.Item = ''
-        this.clickFont = []
-        this.queryLinkFont = []
-        this.activeFonts = []
-        this.lineArr = []
-        this.combination = ''
-        // 重置样式
-        for(let i = 0; i < this.$refs.td.length; i++) {
-          // 如果表格的某个子中有active样式，则清空
-          if(this.$refs.td[i].className == 're-active') {
-            this.$refs.td[i].className = ''
-          }
-          // 如果表格的某个子中有active样式，则清空
-          if(this.$refs.td[i].className == 'active') {
-            this.$refs.td[i].className = ''
-          }
-          // 如果表格的某个子中有self-active样式，则清空
-          if(this.$refs.td[i].className == 'self-active') {
-            this.$refs.td[i].className = ''
-          }
-        }
-        // 重置变字
-        this.changeStorage.map(item => {
-          this.dataTable[item.trLine][item.tdCol].font = item.font
-        })
-        this.changeStorage = []
-        resolve()
+      this.clickFont = []
+      this.queryLinkFont = []
+      this.combination = ''
+      // 重置变字
+      this.changeStorage.map(item => {
+        this.dataTable[item.trLine][item.tdCol].font = item.font
       })
+      this.changeStorage = []
     },
 
-    // 第二版本
+    /**
+     * @method 请求表格数据
+     */
     requestData() {
       return new Promise((resolve, reject) => {
         this.$axios.get(`http://www.dooor.com/api/tableData`, {
+        // this.$axios.get(`http://localhost:3000/api/tableData`, {
           onDownloadProgress: function (p) {
             // 对原生进度事件的处理
             this.uploadProgress((100 * ( p.loaded / p.total )).toFixed(0))
           }.bind(this),
         }).then(res => {
-        // this.$axios.get(`http://localhost:3000/api/tableData`).then(res => {
           this.dataTable = res.data.data
           resolve('获取成功')
         }).catch((err) => {
@@ -354,28 +322,23 @@ export default {
       })
     },
 
+    /**
+     * @method 点击字体逻辑
+     */
     clickTdChildItem(e, item) {
-      // 清空 ActiveFonts 数组变量中的数据
-      this.activeFonts = []
-      // 重置样式
-      for(let i = 0; i < this.$refs.td.length; i++) {
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 're-active') {
-          this.$refs.td[i].className = ''
-        }
-        // 如果表格的某个子中有active样式，则清空
-        if(this.$refs.td[i].className == 'active') {
-          this.$refs.td[i].className = ''
-        }
-        // 如果表格的某个子中有self-active样式，则清空
-        if(this.$refs.td[i].className == 'self-active') {
-          this.$refs.td[i].className = ''
-        }
-        // 清除自定义背景色
-        if(this.$refs.td[i].style.backgroundColor) {
-          this.$refs.td[i].style.backgroundColor = ''
-        }
-      }
+      this.lineArr = [] // `Relation` 线段数组重置为空
+      // 消除Active样式
+      this.clearActiveStyle(this.activeFonts);
+      this.resetCustomBgColor();
+      this.Item = item // 记录点击字
+      this.$refs.td[this.Item.index].className = 'active' // 高亮点击字
+
+      
+      this.customBgColorList.push({
+        index: this.Item.index,
+        bgColor: this.$refs.td[this.Item.index].style.backgroundColor
+      })
+      this.$refs.td[this.Item.index].style.backgroundColor = '';
 
       // 已经点击中的字体存入该数组中, 用于传输Ajax查询组合键
       this.clickFont.push(item.index)
@@ -386,69 +349,24 @@ export default {
       this.clickFont.map(item => {
         fontArrStr += item + ','
       })
-      
       this.$router.push({ query: {'font': fontArrStr} });
       
       if(this.clickFont.length == 1) { // 第一次点击字
-
         this.changeFont(item.change) // 执行变字逻辑
 
-        this.Item = item
-        // 高亮本字
-        this.$refs.td[this.Item.index].className = 'active'
-
-        // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
-        for(let i = 0; i < this.Item.relation.length; i++){
-          this.activeFonts.push(this.Item.relation[i].index)
-          this.activeFonts.push(this.Item.relation[i].to)
-        }
-
-        // 高亮 `Relation` 字段中的每一个字
-        for(let i = 0; i < this.activeFonts.length; i++) {
-          if(this.activeFonts[i] != '') {
-            this.$refs.td[this.activeFonts[i]].className = 're-active'
-          }
-        }
-
-        // 高亮 `Relation` 字段中的每一个字的 `自定义` 样式
+        // 遍历所点击字 relation 字段逻辑
         for(let i = 0; i < this.Item.relation.length; i++) {
-          if(this.Item.relation[i].style) { // 如果有自定义样式
+          // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
+          this.activeFonts.push(this.Item.relation[i].index);
+          this.activeFonts.push(this.Item.relation[i].to);
 
-            if(this.Item.relation[i].index != '') {
-              this.$refs.td[this.Item.relation[i].index].style = this.Item.relation[i].style
-            }
-
-            if(this.Item.relation[i].to != '') {
-              this.$refs.td[this.Item.relation[i].to].style = this.Item.relation[i].style
-            }
-          }
-        }
-
-        // 生成线段
-        this.lineArr = [] // `Relation` 线段数组
-
-        for(let i = 0 ; i < this.Item.relation.length; i++) {
-          if(this.Item.relation[i].index == '' || this.Item.relation[i].to == '') {
-            continue;
-          } else {
+          // 关系字连线
+          if(this.Item.relation[i].index !== '' && this.Item.relation[i].to !== '') {
             this.lineArr.push(this.Item.relation[i])
           }
         }
-
-        // 高亮与本字连接字体
-        for(let i = 0; i < this.Item.self.length; i++) {
-          for(let j = 0; j < this.$refs.td.length; j++) {
-            if(this.$refs.td[j].dataset.index == this.Item.self[i]) {
-              this.$refs.td[j].className = 'self-active'
-            }
-          }
-        }
-
+        this.relationActiveFont(this.activeFonts)
       } else { // 第二次点击字
-        // 清空第一次点击字体的线段
-        this.lineArr = []
-        this.Item = ''
-        
         // 发送组合键查询Ajax
         // this.$axios.post(`http://localhost:3000/api/combination`, {data: this.clickFont}).then(res => {
         this.$axios.post(`http://www.dooor.com/api/combination`, {data: this.clickFont}).then(res => {
@@ -464,18 +382,14 @@ export default {
             
             // 高亮Relation字段中的每一个字
             for(let i = 0; i < this.combination.relation.length; i++) {
-              if(this.combination.relation[i].index != '') {
-                this.$refs.td[this.combination.relation[i].index].className = 're-active'
-              }
-
-              if(this.combination.relation[i].to!= '') {
-                this.$refs.td[this.combination.relation[i].to].className = 're-active'
-              }
+              this.activeFonts.push(this.combination.relation[i].index);
+              this.activeFonts.push(this.combination.relation[i].to);
             }
+
+            this.relationActiveFont(this.activeFonts)
           } else {
-            this.clear().then(() => {
-              this.clickTdChildItem(e, item)
-            })
+            this.clear();
+            this.clickTdChildItem(e, item);
           }
         })
       }
@@ -501,6 +415,58 @@ export default {
         this.dataTable[trLine][tdCol].font = item.change // 改变字体
       })
     },
+
+    /**
+     * @method 高亮relation字体
+     * @param {Array} fontList 高亮字列表
+     */
+    relationActiveFont: function(fontList) {
+      const uniqueList = Array.from(new Set(fontList))
+      uniqueList.forEach(item => {
+        if(item != '') {
+          // 存入自定义背景色
+          this.customBgColorList.push({
+            index: item,
+            bgColor: this.$refs.td[item].style.backgroundColor
+          })
+          this.$refs.td[item].style.backgroundColor = '';
+
+          // 高亮
+          this.$refs.td[item].className += ' re-active'
+        }
+      })
+    },
+
+    /**
+     * @method 清除高亮字体
+     * @param {Array} fontList 高亮字列表
+     */
+    clearActiveStyle: function(fontList = []) {
+      let index = this.Item.index
+      if(index || index === 0) {
+        // 清除上一个本字高亮
+        this.$refs.td[index].className = ''
+      }
+
+      const uniqueList = Array.from(new Set(fontList))
+      uniqueList.forEach(item => {
+        // 如果表格的某个子中有active样式，则清空
+        this.$refs.td[item].className = ''
+      })
+      this.activeFonts = [] // 清空 ActiveFonts 数组变量中的数据
+    },
+
+    /**
+     * @method 恢复自定义背景色
+     */
+    resetCustomBgColor: function() {
+      let list = this.customBgColorList || []
+      list.forEach(item => {
+        this.$refs.td[item.index].style.backgroundColor = item.bgColor
+      })
+      this.customBgColorList = []
+    }
+
   },
 
   destroyed () {
@@ -558,19 +524,19 @@ line {
 
 .table td.active{
   color: green;
-  background-color: pink;
+  background-color: #00ff00;
+  border-radius: 2px;
+}
+
+.table td.active.re-active{
+  color: green;
+  background-color: #00ff00;
   border-radius: 2px;
 }
 
 .table td.re-active{
   color: fuchsia;
-  background-color: skyblue;
-  border-radius: 2px;
-}
-
-.table td.self-active{
-  color: teal;
-  background-color: yellow;
+  background-color: MediumSpringGreen;
   border-radius: 2px;
 }
 
