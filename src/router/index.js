@@ -21,7 +21,8 @@ const routes = [
 
 
 const router = new VueRouter({
-  routes
+  mode: 'history',
+  routes,
 })
 
 //注册一个全局前置守卫,确保要调用 next 方法，否则钩子就不会被 resolved
@@ -38,5 +39,11 @@ router.beforeEach((to, from, next) => {
 
   next()
 })
+
+const originalPush = VueRouter.prototype.push
+VueRouter.prototype.push = function push(location) {
+  return originalPush.call(this, location).catch(err => err)
+}
+
 
 export default router
