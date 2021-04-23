@@ -280,12 +280,9 @@ export default {
       // let td = 0;
       for (let i = 0; i < queryArr.length; i++) {
         setTimeout(() => {
-          // tr = Math.floor(queryArr[i] / 30); // 行数
-          // td = queryArr[i] % 30; // 列数)
-          // this.clickTdChildItem(this.dataTable[tr][td]);
-          console.dir(this.$refs.td[queryArr[i]], "this.$refs.td[queryArr[i]]");
+
           this.$refs.td[queryArr[i]].click();
-          // this.simulateClick(this.$refs.td[queryArr[i]]);
+          
         }, 1000 * i);
       }
     },
@@ -311,7 +308,6 @@ export default {
 
     // 进入超链接
     openLink(td) {
-      console.log("xxx");
       this.rightClickTd = td;
       if (this.rightClickTd.link != "") {
         window.location.href = "https://" + this.rightClickTd.link;

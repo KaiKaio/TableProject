@@ -87,6 +87,9 @@
                 <source :src=imgSrc>
               </video>
             </div>
+
+            <button :disabled="preDisabled" @click="handlePrevNext('prev')" ref="prevBtn" class="handle-btn">上页</button>
+            <button :disabled="nextDisabled" @click="handlePrevNext('next')" ref="nextBtn" class="handle-btn">下页</button>
           </foreignObject>
 
           <!-- 连线 -->
@@ -202,6 +205,8 @@ export default {
       prevHandleItem: {},
 
       isVideoSources: false,
+
+      prevNextFontList: [], // 前进后退栈列表
     };
   },
 
@@ -209,11 +214,27 @@ export default {
     ...mapState({
       queryFont: (state) => state.queryFont,
     }),
+
+    preDisabled: function() {
+      if(this.clickFont.length === 0 && this.prevNextFontList.length === 0) {
+        return 'disabled'
+      } else {
+        return false
+      }
+    },
+
+    nextDisabled: function() {
+      if(this.clickFont.length === 0 && this.prevNextFontList.length === 0) {
+        return 'disabled'
+      } else {
+        return false
+      }
+    },
   },
 
   created() {
     window.addEventListener("scroll", this.handleScroll);
-    window.addEventListener('popstate', this.popstate, false);
+    // window.addEventListener('popstate', this.popstate, false);
 
     this.requestData().then(() => {
       this.loadComplete = true;
@@ -234,28 +255,70 @@ export default {
   },
 
   methods: {
-    popstate() {
-      const { to } = this.routeInfo;
-      const toQuery = to?.query?.font || '';
-      if(toQuery) {
-        let toList = toQuery.split(",");
-        toList.pop(); // 删除最后一个元素 ','
-        const popIndex = toList.pop();
+    handlePrevNext(flagStr) {
+      if(flagStr === 'prev') {
 
-        toList = toList.map(item => {
-          return item = item / 1
-        })
+        // 点击上一步
+        if(this.clickFont.length > 1) {
+          const popIndex = this.clickFont.pop();
+          this.prevNextFontList.push(popIndex);
 
-        this.clickFont = toList;
+          const { to } = this.routeInfo;
+          const query = to?.query?.font || '';
 
-        const tr = Math.floor(popIndex / 129); // 行数
-        const td = popIndex % 129; // 列数
+          const splitQuery = query.split(",");
+          splitQuery.pop(); // 去除最后一个空白项
+          splitQuery.pop(); // 去除最后一项Index
+          const clickIndex = splitQuery.pop();
+          const pushQuery = splitQuery.join(',') + ',';
 
-        this.clickTdChildItem(this.dataTable[tr][td])
-        return;
+          this.clickFont = splitQuery.map(item => Number(item));
+          
+          this.$nextTick(() => {
+            this.$router.push({ query: { font: pushQuery } });
+            this.$refs.td[clickIndex].click();
+          });
+          return
+        }
+
+        // 点击上一步 - 从最后一步开始
+        if(this.clickFont.length === 1) {
+          const popIndex = this.clickFont.pop();
+          this.prevNextFontList.push(popIndex);
+
+          this.clickFont = this.prevNextFontList.reverse();
+          const clickIndex = this.clickFont.pop();
+          this.prevNextFontList = [];
+
+          const pushQuery = this.clickFont.join(',') + ',';
+          this.clickFont = this.clickFont.map(item => Number(item));
+          
+          this.$nextTick(() => {
+            this.$router.push({ query: { font: pushQuery } });
+            this.$refs.td[clickIndex].click();
+          });
+        }
       }
-      // 清除本字高亮
-      this.clear();
+
+      if(flagStr === 'next') {
+        // 点击下一步
+        if(this.prevNextFontList.length > 0) {
+          const popIndex = this.prevNextFontList.pop();
+          this.$refs.td[popIndex].click();
+          return;
+        }
+
+        // 点击下一步 - 从头开始
+        if(this.prevNextFontList.length === 0 && this.clickFont.length > 0) {
+          this.prevNextFontList = this.clickFont.slice(1, this.clickFont.length).reverse();
+          const headFontIndex = this.clickFont[0]; // 首字
+          this.clickFont = [];
+          this.$nextTick(() => {
+            this.$router.push('/');
+            this.$refs.td[headFontIndex].click();
+          });
+        }
+      }
     },
 
     // 更新进度条
@@ -264,15 +327,20 @@ export default {
       this.progressData.width = this.countAdd + "%";
     },
 
-    fetchQuery() {
-      let query = this.queryFont;
-      let queryArr = query.split(",");
-      queryArr.pop(); // 删除最后一个元素
-      
-      for (let i = 0; i < queryArr.length; i++) {
+    // 获取Query参数进行重现
+    async fetchQuery() {
+      const query = this.queryFont;
+      if(query) {
+        const splitQuery = query.split(",");
+        splitQuery.pop(); // 去除最后一个空白项
+        const popIndex = splitQuery.pop();
+        const pushQuery = splitQuery.join(',') + ',';
+        this.clickFont = splitQuery.map(item => Number(item));
+        
         setTimeout(() => {
-          this.$refs.td[queryArr[i]].click();
-        }, 1200 * i);
+          this.$router.push({ query: { font: pushQuery } });
+          this.$refs.td[popIndex].click();
+        }, 1000)
       }
     },
 
@@ -295,7 +363,6 @@ export default {
       }
       let heightValue = 0;
       heightArr.map((item) => {
-        console.log(this.$refs.td[item].getBoundingClientRect().height)
         heightValue += this.$refs.td[item].getBoundingClientRect().height;
       });
 
@@ -310,6 +377,17 @@ export default {
 
       this.airTop = this.$refs.td[7016].offsetTop; // 计算距离页面顶部的距离
       this.$refs.airArea.style.top = this.airTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+
+
+      this.$refs.prevBtn.style.width = this.$refs.td[4501].getBoundingClientRect().width + this.$refs.td[4502].getBoundingClientRect().width + 'px';
+      this.$refs.prevBtn.style.height = this.$refs.td[4501].getBoundingClientRect().height; + 'px';
+      this.$refs.prevBtn.style.left = this.$refs.td[4501].offsetLeft + 'px';
+      this.$refs.prevBtn.style.top = this.$refs.td[4501].offsetTop + 'px';
+
+      this.$refs.nextBtn.style.width = this.$refs.td[4504].getBoundingClientRect().width + this.$refs.td[4505].getBoundingClientRect().width + 'px';
+      this.$refs.nextBtn.style.height = this.$refs.td[4504].getBoundingClientRect().height; + 'px';
+      this.$refs.nextBtn.style.left = this.$refs.td[4504].offsetLeft + 'px';
+      this.$refs.nextBtn.style.top = this.$refs.td[4504].offsetTop + 'px';
     },
 
     handleScroll() {
@@ -345,6 +423,7 @@ export default {
         this.dataTable[item.trLine][item.tdCol].font = item.font;
       });
       this.changeStorage = [];
+      this.prevNextFontList = [];
     },
 
     /**
@@ -490,7 +569,13 @@ export default {
      * @param {Array} changelist 所需变字列表
      */
     changeFont(changeList = []) {
-      changeList.map((item) => {
+      // 重置变字
+      this.changeStorage.reverse().forEach((item) => {
+        this.dataTable[item.trLine][item.tdCol].font = item.font;
+      });
+      this.changeStorage = [];
+      
+      changeList.forEach((item) => {
         // 改变字体
         let index = item.index;
         let trLine = Math.floor(index / 129);
@@ -561,7 +646,7 @@ export default {
 
   destroyed() {
     window.removeEventListener("scroll", this.handleScroll);
-    window.removeEventListener('popstate', this.popstate, false);
+    // window.removeEventListener('popstate', this.popstate, false);
   },
 
   watch: {
@@ -653,6 +738,10 @@ line {
   background: rgba(5, 180, 147, 1);
   border-radius: 3px;
   transition: all 0.3s;
+}
+
+.handle-btn {
+  position: absolute;
 }
 
 .air-area {
