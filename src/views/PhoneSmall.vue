@@ -24,11 +24,11 @@
           <tbody>
             <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
               <td
-                v-for="(td, index) in tr"
-                :key="index"
+                v-for="td in tr"
+                :key="td._id"
                 :data-index="td.index"
                 ref="td"
-                :style="td.style"
+                :style="isFullScreen ? { opacity: 0 } : td.style"
                 @click="(event) => mousedown(event, td)"
               >
                 {{ td.font }}
@@ -65,11 +65,36 @@
           ref="switchArea"
           :style="{
             width: switchWidth,
-            height: switchTop,
+            height: switchHeight,
             top: switchTop,
             left: switchLeft,
           }"
           @click="hanndleSwitchArea"
+        >
+        </div>
+        <!-- 前后按键 -->
+        <div
+          class="prev-btn"
+          ref="prevBtn"
+          @click="handlePrevNext('prev')"
+          :style="{
+            width: prevWidth,
+            height: prevHeight,
+            top: prevTop,
+            left: prevLeft,
+          }"
+        >
+        </div>
+        <div
+          class="next-btn"
+          ref="nextBtn"
+          @click="handlePrevNext('next')"
+          :style="{
+            width: nextWidth,
+            height: nextHeight,
+            top: nextTop,
+            left: nextLeft,
+          }"
         >
         </div>
       </foreignObject>
@@ -191,8 +216,20 @@ export default {
       switchWidth: 0,
       switchHeight: 0,
 
+      prevLeft: 0,
+      prevTop: 0,
+      prevWidth: 0,
+      prevHeight: 0,
+
+      nextLeft: 0,
+      nextTop: 0,
+      nextWidth: 0,
+      nextHeight: 0,
+
       switchFullScreenW: 0,
       switchFullScreenH: 0,
+
+      prevNextFontList: [], // 前进后退栈列表
     };
   },
 
@@ -428,8 +465,20 @@ export default {
       const widthArr = [474, 475, 476, 477, 478, 479];
       const heightArr = [474, 504, 534];
 
+      const prevWidthList = [360, 361, 362, 363, 364, 365];
+      const prevHeightList = [360, 390, 420];
+
+      const nextWidthList = [450, 451, 452, 453, 454, 455];
+      const nextHeightList = [450, 480, 510];
+
       let widthValue = 0;
       let heightValue = 0;
+
+      let prevWidthValue = 0;
+      let prevHeightValue = 0;
+
+      let nextWidthValue = 0;
+      let nextHeightValue = 0;
 
       // 参数为竖屏还是横屏
       if (shuHeng === "Heng") {
@@ -439,6 +488,18 @@ export default {
         heightArr.forEach((item) => {
           heightValue += this.$refs.td[item].offsetHeight;
         });
+        prevWidthList.forEach((item) => {
+          prevWidthValue += this.$refs.td[item].offsetWidth;
+        });
+        prevHeightList.forEach((item) => {
+          prevHeightValue += this.$refs.td[item].offsetHeight;
+        });
+        nextWidthList.forEach((item) => {
+          nextWidthValue += this.$refs.td[item].offsetWidth;
+        });
+        nextHeightList.forEach((item) => {
+          nextHeightValue += this.$refs.td[item].offsetHeight;
+        });
       } else if (shuHeng === "Shu") {
         widthArr.forEach((item) => {
           widthValue += this.$refs.td[item].offsetWidth;
@@ -446,12 +507,34 @@ export default {
         heightArr.forEach((item) => {
           heightValue += this.$refs.td[item].offsetHeight;
         });
+        prevWidthList.forEach((item) => {
+          prevWidthValue += this.$refs.td[item].offsetWidth;
+        });
+        prevHeightList.forEach((item) => {
+          prevHeightValue += this.$refs.td[item].offsetHeight;
+        });
+        nextWidthList.forEach((item) => {
+          nextWidthValue += this.$refs.td[item].offsetWidth;
+        });
+        nextHeightList.forEach((item) => {
+          nextHeightValue += this.$refs.td[item].offsetHeight;
+        });
       }
+
       this.switchLeft = this.$refs.td[474].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
       this.switchTop = this.$refs.td[474].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.prevLeft = this.$refs.td[360].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.prevTop = this.$refs.td[360].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.nextLeft = this.$refs.td[450].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.nextTop = this.$refs.td[450].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
       this.switchWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
       this.switchHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+      
+      this.prevWidth = prevWidthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
+      this.prevHeight = prevHeightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+      this.nextWidth = nextWidthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
+      this.nextHeight = nextHeightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
     },
 
     /**
@@ -562,7 +645,7 @@ export default {
     relationActiveFont: function (fontList) {
       const uniqueList = Array.from(new Set(fontList));
       uniqueList.forEach((item) => {
-        if (item != "") {
+        if (item !== "") {
           // 存入自定义背景色
           this.customBgColorList.push({
             index: item,
@@ -641,9 +724,78 @@ export default {
       this.customBgColorList = [];
     },
 
+    /**
+     * 点击全屏按钮
+     */
     hanndleSwitchArea: function () {
       this.isFullScreen = !this.isFullScreen;
     },
+
+    handlePrevNext: function(flagStr) {
+      if(flagStr === 'prev') {
+
+        // 点击上一步
+        if(this.clickFont.length > 1) {
+          const popIndex = this.clickFont.pop();
+          this.prevNextFontList.push(popIndex);
+
+          const { to } = this.routeInfo;
+          const query = to?.query?.font || '';
+
+          const splitQuery = query.split(",");
+          splitQuery.pop(); // 去除最后一个空白项
+          splitQuery.pop(); // 去除最后一项Index
+          const clickIndex = splitQuery.pop();
+          const pushQuery = splitQuery.join(',') + ',';
+
+          this.clickFont = splitQuery.map(item => Number(item));
+          
+          this.$nextTick(() => {
+            this.$router.push({ query: { font: pushQuery } });
+            this.$refs.td[clickIndex].click();
+          });
+          return
+        }
+
+        // 点击上一步 - 从最后一步开始
+        if(this.clickFont.length === 1) {
+          const popIndex = this.clickFont.pop();
+          this.prevNextFontList.push(popIndex);
+
+          this.clickFont = this.prevNextFontList.reverse();
+          const clickIndex = this.clickFont.pop();
+          this.prevNextFontList = [];
+
+          const pushQuery = this.clickFont.join(',') + ',';
+          this.clickFont = this.clickFont.map(item => Number(item));
+          
+          this.$nextTick(() => {
+            this.$router.push({ query: { font: pushQuery } });
+            this.$refs.td[clickIndex].click();
+          });
+        }
+      }
+
+      if(flagStr === 'next') {
+        // 点击下一步
+        if(this.prevNextFontList.length > 0) {
+          const popIndex = this.prevNextFontList.pop();
+          this.$refs.td[popIndex].click();
+          return;
+        }
+
+        // 点击下一步 - 从头开始
+        if(this.prevNextFontList.length === 0 && this.clickFont.length > 0) {
+          this.prevNextFontList = this.clickFont.slice(1, this.clickFont.length).reverse();
+          const headFontIndex = this.clickFont[0]; // 首字
+          this.clickFont = [];
+          this.$nextTick(() => {
+            this.$router.push('/m');
+            this.$refs.td[headFontIndex].click();
+          });
+        }
+      }
+    }
   },
 
   watch: {
@@ -667,6 +819,10 @@ export default {
   user-select: none;
 }
 
+.td-active {
+  opacity: 1 !important;
+}
+
 .fadeSelect-enter-active,
 .fadeSelect-leave-active {
   transition: opacity 0.5s;
@@ -685,6 +841,16 @@ export default {
 }
 
 .switch-area {
+  position: absolute;
+  z-index: 1;
+}
+
+.prev-btn {
+  position: absolute;
+  z-index: 1;
+}
+
+.next-btn {
   position: absolute;
   z-index: 1;
 }
@@ -750,12 +916,14 @@ export default {
   color: green;
   background-color: yellow;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .font-item > a.active_relation {
   color: red;
   background-color: skyblue;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 line {
@@ -766,18 +934,21 @@ line {
   color: green;
   background-color: pink;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .table td.re-active {
   color: #fff;
   background-color: rgb(139, 86, 86);
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .table td.self-active {
   color: teal;
   background-color: yellow;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .page-button {

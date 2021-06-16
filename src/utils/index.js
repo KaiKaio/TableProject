@@ -5,3 +5,7 @@ export const sleep = function (timeout = 50) {
     }, timeout)
   })
 }
+
+export const unique = function (arr) {
+  return Array.from(new Set(arr))
+}
