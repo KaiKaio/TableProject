@@ -1,5 +1,13 @@
 <template>
-  <div ref="home" class="home">
+  <div ref="home" class="home" :style="{
+    height: screenStatus ? `${clientHeight}px` : `${clientWidth}px`,
+    width: screenStatus ? `${clientWidth}px` : `${clientHeight}px`,
+    top: screenStatus ? '0px' : homeTop,
+    left: screenStatus ? '0px' : homeLeft,
+    transform: screenStatus ? 'none' : 'rotate(90deg)',
+    transformOrigin: '50% 50%',
+    }"
+  >
     <svg
       width="100%"
       height="100%"
@@ -29,11 +37,16 @@
           </tbody>
         </table>
 
-        <!-- 空白区 -->
+        <!-- 图片区 -->
         <div
           class="air-area"
           ref="airArea"
           :style="{
+            width: isFullScreen ? `${switchFullScreenH}px` : airWidth,
+            height: isFullScreen ? `${switchFullScreenW}px` : airHeight,
+            top: isFullScreen ? 0 : airTop,
+            left: isFullScreen ? 0 : airLeft,
+            bottom: isFullScreen ? 0 : airBottom,
             zIndex: isVideoSources ? 0 : -1,
             backgroundImage: 'url(' + (isVideoSources ? '' : imgSrc) + ')',
             backgroundSize: 'cover',
@@ -45,11 +58,24 @@
             <source :src=imgSrc>
           </video>
         </div>
+
+        <!-- 图片全屏区 -->
+        <div
+          class="switch-area"
+          ref="switchArea"
+          :style="{
+            width: switchWidth,
+            height: switchTop,
+            top: switchTop,
+            left: switchLeft,
+          }"
+          @click="hanndleSwitchArea"
+        >
+        </div>
       </foreignObject>
 
       <!-- 连线 -->
       <template>
-        /> -->
         <defs>
           <marker
             id="arrow"
@@ -75,17 +101,17 @@
           </marker>
         </defs>
 
-        <template v-if="screenStatus === true">
+        <template v-if="screenStatus">
           <line
             class="line"
             v-for="(item, index) in lineArr"
             :key="index"
-            :x1="$refs.td[item.index].getBoundingClientRect().left + 5"
+            :x1="$refs.td[item.index].offsetLeft + 5"
             :y1="
-              $refs.td[item.index].getBoundingClientRect().top + 10 + scrollY
+              $refs.td[item.index].offsetTop + 10 + scrollY
             "
-            :x2="$refs.td[item.to].getBoundingClientRect().left + 5"
-            :y2="$refs.td[item.to].getBoundingClientRect().top + 10 + scrollY"
+            :x2="$refs.td[item.to].offsetLeft + 5"
+            :y2="$refs.td[item.to].offsetTop + 10 + scrollY"
             :style="{
               stroke: 'green',
               opacity: 0.9,
@@ -119,6 +145,7 @@
 
 <script>
 import { mapState } from "vuex";
+import { sleep } from "@/utils/"
 export default {
   name: "M",
   data() {
@@ -136,6 +163,9 @@ export default {
       airHeight: 0, // 图片（空白）区高度
       airLeft: 0, // 图片（空白）区距离左侧距离
       airTop: 0, // 图片（空白）区距离顶部距离
+      airBottom: 0,
+      homeTop: 0,
+      homeLeft: 0,
       imgSrc: "", // Ajax 返回的图片地址
       delFont: [], // 被删除的字（集合）（历史）
       screenStatus: false, // 全屏状态（ False为竖屏，True为横屏 ）
@@ -151,6 +181,18 @@ export default {
 
       isVideoSources: false,
       clickTimes: 0,
+      isFullScreen: false,
+
+      clientHeight: 0,
+      clientWidth: 0,
+
+      switchLeft: 0,
+      switchTop: 0,
+      switchWidth: 0,
+      switchHeight: 0,
+
+      switchFullScreenW: 0,
+      switchFullScreenH: 0,
     };
   },
 
@@ -181,60 +223,64 @@ export default {
     );
 
     this.requestData()
-      .then(() => {
-        let _home = this.$refs.home;
-        let width = document.documentElement.clientWidth;
-        let height = document.documentElement.clientHeight;
-        if (width < height) {
-          _home.style.height = width + "px";
-          _home.style.width = height + "px";
-          _home.style.top = (height - width) / 2 + "px";
-          _home.style.left = 0 - (height - width) / 2 + "px";
-          _home.style.transform = "rotate(90deg)";
-          _home.style.transformOrigin = "50% 50%";
-          this.computedArea("Shu"); // 计算空白区域（竖屏幕）
-        } else {
-          _home.style.height = height + "px";
-          _home.style.width = width + "px";
-          _home.style.top = "0px";
-          _home.style.left = "0px";
-          _home.style.transform = "none";
-          _home.style.transformOrigin = "50% 50%";
+      .then(async () => {
+        const { clientHeight, clientWidth } = document.documentElement;
+        this.clientHeight = clientHeight;
+        this.clientWidth = clientWidth;
+
+        if (clientHeight < clientWidth) {
+          this.screenStatus = true;
+          await sleep(50);
           this.computedArea("Heng"); // 计算空白区域（横屏幕）
+          this.computedSwitchArea("Heng"); // 计算空白区域（横屏幕）
+
+          this.switchFullScreenH = clientWidth;
+          this.switchFullScreenW = clientHeight;
+        } else {
+          this.homeTop = -(0 - (clientHeight - clientWidth) / 2) + "px";
+          this.homeLeft = -((clientHeight - clientWidth) / 2) + "px";
+          this.screenStatus = false;
+          await sleep(50);
+          this.computedArea("Shu"); // 计算空白区域（竖屏幕）
+          this.computedSwitchArea("Shu"); // 计算空白区域（竖屏幕）
+
+          this.switchFullScreenH = clientHeight;
+          this.switchFullScreenW = clientWidth;
+          
         }
 
         // 转屏幕兼容性处理
         let evt =
           "onorientationchange" in window ? "orientationchange" : "resize";
 
-        window.addEventListener(evt, () => {
+        window.addEventListener(evt, async () => {
           // 监听转屏
-          let width = document.documentElement.clientWidth;
-          let height = document.documentElement.clientHeight;
-          if (width < height) {
-            _home.style.height = width + "px";
-            _home.style.width = height + "px";
+          await sleep(50);
+          const clientHeight = document.documentElement.clientHeight;
+          const clientWidth = document.documentElement.clientWidth;
 
-            _home.style.top = "0px";
-            _home.style.left = "0px";
+          this.clientHeight = clientHeight;
+          this.clientWidth = clientWidth;
 
-            _home.style.transform = "none";
-            _home.style.transformOrigin = "50% 50%";
-
+          if (clientHeight < clientWidth) {
             this.screenStatus = true;
-            this.computedArea("Heng"); // 计算空白区域
+            await sleep(50);
+            this.computedArea("Heng"); // 计算空白区域（横屏幕）
+            this.computedSwitchArea("Heng"); // 计算空白区域（横屏幕）
+
+            this.switchFullScreenH = clientWidth;
+            this.switchFullScreenW = clientHeight;
           } else {
-            _home.style.height = height + "px";
-            _home.style.width = width + "px";
-
-            _home.style.top = -((height - width) / 2) + "px";
-            _home.style.left = -(0 - (height - width) / 2) + "px";
-
-            _home.style.transform = "rotate(90deg)";
-            _home.style.transformOrigin = "50% 50%";
-
+            this.homeTop = -(0 - (clientHeight - clientWidth) / 2) + "px";
+            this.homeLeft = -((clientHeight - clientWidth) / 2) + "px";
             this.screenStatus = false;
-            this.computedArea("Shu"); // 计算空白区域
+            await sleep(50);
+            this.computedArea("Shu"); // 计算空白区域（横屏幕）
+            this.computedSwitchArea("Shu"); // 计算空白区域（横屏幕）
+
+            this.switchFullScreenH = clientHeight;
+            this.switchFullScreenW = clientWidth;
+
           }
         });
 
@@ -276,13 +322,9 @@ export default {
       let queryArr = query.split(",");
       queryArr.pop(); // 删除最后一个元素
 
-      // let tr = 0;
-      // let td = 0;
       for (let i = 0; i < queryArr.length; i++) {
         setTimeout(() => {
-
           this.$refs.td[queryArr[i]].click();
-          
         }, 1000 * i);
       }
     },
@@ -296,7 +338,7 @@ export default {
       this.clickTimes++;
       if (this.clickTimes === 2) {
         this.clickTimes = 0;
-        this.openLink(td)
+        this.openLink(td);
       }
       setTimeout(() => {
         if (this.clickTimes === 1) {
@@ -350,64 +392,66 @@ export default {
 
     // 计算空白图片区 （横屏）
     computedArea(shuHeng) {
+      const widthArr = [282, 283, 284, 285, 286, 287];
+      const heightArr = [282, 312, 342, 372, 402, 432];
+
+      let widthValue = 0;
+      let heightValue = 0;
+
       // 参数为竖屏还是横屏
       if (shuHeng === "Heng") {
-        let widthArr = [282, 283, 284, 285, 286, 287];
-        let widthValue = 0;
-        widthArr.map((item) => {
-          widthValue += this.$refs.td[item].getBoundingClientRect().width;
+        widthArr.forEach((item) => {
+          widthValue += this.$refs.td[item].offsetWidth;
         });
-
-        let heightArr = [282, 312, 342, 372, 402, 432];
-        let heightValue = 0;
-        heightArr.map((item) => {
-          heightValue += this.$refs.td[item].getBoundingClientRect().height;
+        heightArr.forEach((item) => {
+          heightValue += this.$refs.td[item].offsetHeight;
         });
-
-        this.airWidth = widthValue; // 赋值宽度
-        this.airHeight = heightValue; // 赋值高度
-
-        this.$refs.airArea.style.width = this.airWidth - 3 + "px"; // (并且赋值) -3 是为了适应图片区的Border
-        this.$refs.airArea.style.height = this.airHeight - 3 + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
-
-        this.airLeft = this.$refs.td[282].getBoundingClientRect().left; // 计算图片区距离页面最左的距离
-        this.$refs.airArea.style.left = this.airLeft + 3 + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-
-        this.airTop = this.$refs.td[282].getBoundingClientRect().top; // 计算距离页面顶部的距离
-        this.$refs.airArea.style.top = this.airTop + 3 + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
       } else if (shuHeng === "Shu") {
-        let widthArr = [282, 283, 284, 285, 286, 287];
-        let widthValue = 0;
-        widthArr.map((item) => {
-          widthValue += this.$refs.td[item].getBoundingClientRect().height;
+        widthArr.forEach((item) => {
+          widthValue += this.$refs.td[item].offsetWidth;
         });
-
-        let heightArr = [282, 312, 342, 372, 402, 432];
-        let heightValue = 0;
-        heightArr.map((item) => {
-          heightValue += this.$refs.td[item].getBoundingClientRect().width;
+        heightArr.forEach((item) => {
+          heightValue += this.$refs.td[item].offsetHeight;
         });
-
-        this.airWidth = widthValue; // 赋值宽度
-        this.airHeight = heightValue; // 赋值高度
-
-        this.$refs.airArea.style.width = this.airWidth - 3 + "px"; // (并且赋值) -3 是为了适应图片区的Border
-        this.$refs.airArea.style.height = this.airHeight - 3 + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
-
-        this.airLeft = this.$refs.td[282].getBoundingClientRect().top; // 计算图片区距离页面最左的距离
-        this.$refs.airArea.style.left = this.airLeft + 3 + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-
-        this.airTop = this.$refs.td[432].getBoundingClientRect().left; // 计算距离页面顶部的距离
-        this.$refs.airArea.style.top = "initial"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
-        this.$refs.airArea.style.bottom = this.airTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
       }
+      this.airLeft = this.$refs.td[282].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.airTop = this.$refs.td[282].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
-      // 设置清除区
-      // this.clearWidth = this.$refs.td[495].getBoundingClientRect().width
-      // this.clearHeight = this.$refs.td[495].getBoundingClientRect().height
-      // this.$refs.clearArea.style.width = this.clearWidth * 5  + 'px'
-      // this.$refs.clearArea.style.height = this.clearHeight * 4 + 'px'
-      // this.$refs.clearArea.style.top = this.$refs.td[495].getBoundingClientRect().top + 'px'
+      this.airWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
+      this.airHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+    },
+    
+    /**
+     * 计算切换全屏按钮大小
+     */
+    computedSwitchArea(shuHeng) {
+      const widthArr = [474, 475, 476, 477, 478, 479];
+      const heightArr = [474, 504, 534];
+
+      let widthValue = 0;
+      let heightValue = 0;
+
+      // 参数为竖屏还是横屏
+      if (shuHeng === "Heng") {
+        widthArr.forEach((item) => {
+          widthValue += this.$refs.td[item].offsetWidth;
+        });
+        heightArr.forEach((item) => {
+          heightValue += this.$refs.td[item].offsetHeight;
+        });
+      } else if (shuHeng === "Shu") {
+        widthArr.forEach((item) => {
+          widthValue += this.$refs.td[item].offsetWidth;
+        });
+        heightArr.forEach((item) => {
+          heightValue += this.$refs.td[item].offsetHeight;
+        });
+      }
+      this.switchLeft = this.$refs.td[474].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.switchTop = this.$refs.td[474].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+
+      this.switchWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
+      this.switchHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
     },
 
     /**
@@ -596,6 +640,10 @@ export default {
       });
       this.customBgColorList = [];
     },
+
+    hanndleSwitchArea: function () {
+      this.isFullScreen = !this.isFullScreen;
+    },
   },
 
   watch: {
@@ -633,6 +681,12 @@ export default {
 
 .air-area {
   position: absolute;
+  transition: .3s all;
+}
+
+.switch-area {
+  position: absolute;
+  z-index: 1;
 }
 
 .clear-area {
