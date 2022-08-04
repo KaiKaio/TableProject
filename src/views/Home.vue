@@ -50,11 +50,11 @@
                 style="border-spacing: 0px"
               >
                 <tbody>
-                  <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
-                    <template v-for="(td, index) in tr">
+                  <tr ref="tr" v-for="(tr, index) in dataTable" :data-trindex="index" :key="index">
+                    <template v-for="(td) in tr">
                       <td
                         @click="clickTdChildItem(td)"
-                        :key="index"
+                        :key="td._id"
                         :data-index="td.index"
                         ref="td"
                         :style="`${td.style};`"
@@ -154,6 +154,7 @@
 
 <script>
 import { mapState } from "vuex";
+import { db } from '@/utils/db';
 
 export default {
   name: "Home",
@@ -251,10 +252,21 @@ export default {
         this.computedArea(); // 计算图片区
         this.fetchQuery(); // 执行Query操作
       });
+    }).catch((err) => {
+      console.error(err, 'Error')
     });
   },
 
   methods: {
+    saveItemToIndexDB(item) {
+      return new Promise((resolve) => {
+        db.tableData.put({
+          index: 'table',
+          info: item
+        }).then(() => resolve())
+      })
+    },
+
     handlePrevNext(flagStr) {
       if(flagStr === 'prev') {
 
@@ -348,21 +360,21 @@ export default {
     computedArea() {
 
       let widthArr = [];
-      for (let i = 7016; i < 7040; i++) {
+      for (let i = 37; i < 89; i++) {
         widthArr.push(i);
       }
 
       let widthValue = 0;
-      widthArr.map((item) => {
+      widthArr.forEach((item) => {
         widthValue += this.$refs.td[item].getBoundingClientRect().width;
       });
 
-      let heightArr = [7016];
-      for (let i = 1; i < 12; i++) {
-        heightArr.push(7016 + i * 129);
+      let heightArr = [37];
+      for (let i = 1; i < 29; i++) {
+        heightArr.push(37 + i * 129);
       }
       let heightValue = 0;
-      heightArr.map((item) => {
+      heightArr.forEach((item) => {
         heightValue += this.$refs.td[item].getBoundingClientRect().height;
       });
 
@@ -372,10 +384,10 @@ export default {
       this.$refs.airArea.style.width = this.airWidth + "px"; // (并且赋值)
       this.$refs.airArea.style.height = this.airHeight + "px"; // 计算图片区的高度(并且赋值)
 
-      this.airLeft = this.$refs.td[7016].offsetLeft; // 计算图片区距离页面最左的距离
+      this.airLeft = this.$refs.td[37].offsetLeft; // 计算图片区距离页面最左的距离
       this.$refs.airArea.style.left = this.airLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
 
-      this.airTop = this.$refs.td[7016].offsetTop; // 计算距离页面顶部的距离
+      this.airTop = this.$refs.td[37].offsetTop; // 计算距离页面顶部的距离
       this.$refs.airArea.style.top = this.airTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
 
@@ -431,21 +443,39 @@ export default {
      */
     requestData() {
       return new Promise((resolve, reject) => {
-        this.$axios
-          .get(`http://www.dooor.com/api/tableData`, {
-            // this.$axios.get(`http://localhost:3000/api/tableData`, {
-            onDownloadProgress: (p) => {
-              // 对原生进度事件的处理
-              this.uploadProgress((100 * (p.loaded / p.total)).toFixed(0));
-            },
-          })
-          .then((res) => {
-            this.dataTable = res.data.data;
+        this.$axios.get(`/tableVersion`).then((res) => {
+          const serverVersion = res?.data?.data?.version || '';
+          const localVersion = localStorage.getItem('localVersion');
+
+          if (serverVersion === localVersion) {
+            return db.tableData.get('table')
+          } else {
+            localStorage.setItem('localVersion', serverVersion);
+            return this.$axios.get(`/tableData`, {
+              onDownloadProgress: (p) => {
+                // 对原生进度事件的处理
+                this.uploadProgress((100 * (p.loaded / p.total)).toFixed(0));
+              },
+            })
+          }
+        }).then((res) => {
+          const { info = '', data: { code } = {}, data = {} } = res;
+          console.log({ code })
+          if (code !== 0) {
+            this.dataTable = info
+            this.uploadProgress('100')
+            resolve("获取成功");
+            return;
+          }
+
+          const list = data?.data || [];
+          this.dataTable = list
+
+          this.saveItemToIndexDB(list).then(() => {
+            console.log('SAVE SUCCESS');
             resolve("获取成功");
           })
-          .catch((err) => {
-            reject(err, "获取失败");
-          });
+        }).catch((err) => reject(err));
       });
     },
 
@@ -528,7 +558,7 @@ export default {
     // 多次点击字体（ 发送组合键查询Ajax ）
     async multiClickFont() {
       const secondResult = await this.$axios.post(
-        `http://www.dooor.com/api/combination`,
+        `/combination`,
         { data: this.clickFont }
       );
       const {
@@ -624,7 +654,7 @@ export default {
         this.$refs.td[index].className = "";
       }
 
-      const uniqueList = Array.from(new Set(fontList));
+      const uniqueList = Array.from(new Set(fontList)).filter(item => item !== '');
       uniqueList.forEach((item) => {
         // 如果表格的某个子中有active样式，则清空
         this.$refs.td[item].className = "";

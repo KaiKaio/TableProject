@@ -416,7 +416,7 @@ export default {
     requestData() {
       return new Promise((resolve, reject) => {
         this.$axios
-          .get(`http://www.dooor.com/api/tableDataMobile`)
+          .get(`/tableDataMobile`)
           .then((res) => {
             this.dataTable = res.data.data;
             resolve("获取成功");
@@ -429,8 +429,8 @@ export default {
 
     // 计算空白图片区 （横屏）
     computedArea(shuHeng) {
-      const widthArr = [282, 283, 284, 285, 286, 287];
-      const heightArr = [282, 312, 342, 372, 402, 432];
+      const widthArr = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+      const heightArr = [9, 39, 69, 99, 129, 159];
 
       let widthValue = 0;
       let heightValue = 0;
@@ -451,8 +451,8 @@ export default {
           heightValue += this.$refs.td[item].offsetHeight;
         });
       }
-      this.airLeft = this.$refs.td[282].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-      this.airTop = this.$refs.td[282].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.airLeft = this.$refs.td[9].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.airTop = this.$refs.td[9].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
       this.airWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
       this.airHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
@@ -597,7 +597,7 @@ export default {
 
     async multiClickFont() {
       const secondResult = await this.$axios.post(
-        `http://www.dooor.com/api/mcombination`,
+        `/mcombination`,
         { data: this.clickFont }
       );
       const {
