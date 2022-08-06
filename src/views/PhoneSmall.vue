@@ -24,9 +24,9 @@
           <tbody>
             <tr ref="tr" v-for="(tr, index) in dataTable" :key="index">
               <td
-                v-for="td in tr"
+                v-for="(td, tdIndex) in tr"
                 :key="td._id"
-                :data-index="td.index"
+                :data-index="(tdIndex) + (index * 30)"
                 ref="td"
                 :style="isFullScreen ? { opacity: 0 } : td.style"
                 @click="(event) => mousedown(event, td)"
@@ -70,6 +70,17 @@
             left: switchLeft,
           }"
           @click="hanndleSwitchArea"
+        >
+        </div>
+        <div
+          class="input-area"
+          ref="inputArea"
+          :style="{
+            width: inputWidth,
+            height: inputHeight,
+            top: inputTop,
+            left: inputLeft,
+          }"
         >
         </div>
         <!-- 前后按键 -->
@@ -215,6 +226,11 @@ export default {
       switchTop: 0,
       switchWidth: 0,
       switchHeight: 0,
+
+      inputLeft: 0,
+      inputTop: 0,
+      inputWidth: 0,
+      inputHeight: 0,
 
       prevLeft: 0,
       prevTop: 0,
@@ -462,17 +478,23 @@ export default {
      * 计算切换全屏按钮大小
      */
     computedSwitchArea(shuHeng) {
-      const widthArr = [474, 475, 476, 477, 478, 479];
-      const heightArr = [474, 504, 534];
+      const widthArr = [444, 445, 446];
+      const heightArr = [444, 474, 504, 534];
+      
+      const inputWidthArr = [447, 448, 449];
+      const inputHeightArr = [447, 477, 507, 537];
 
-      const prevWidthList = [360, 361, 362, 363, 364, 365];
-      const prevHeightList = [360, 390, 420];
+      const prevWidthList = [450, 451, 452];
+      const prevHeightList = [450, 480, 510];
 
-      const nextWidthList = [450, 451, 452, 453, 454, 455];
-      const nextHeightList = [450, 480, 510];
+      const nextWidthList = [453, 454, 455];
+      const nextHeightList = [453, 483, 513];
 
       let widthValue = 0;
       let heightValue = 0;
+      
+      let inputWidthValue = 0;
+      let inputHeightValue = 0;
 
       let prevWidthValue = 0;
       let prevHeightValue = 0;
@@ -487,6 +509,12 @@ export default {
         });
         heightArr.forEach((item) => {
           heightValue += this.$refs.td[item].offsetHeight;
+        });
+        inputWidthArr.forEach((item) => {
+          inputWidthValue += this.$refs.td[item].offsetWidth;
+        });
+        inputHeightArr.forEach((item) => {
+          inputHeightValue += this.$refs.td[item].offsetHeight;
         });
         prevWidthList.forEach((item) => {
           prevWidthValue += this.$refs.td[item].offsetWidth;
@@ -507,6 +535,12 @@ export default {
         heightArr.forEach((item) => {
           heightValue += this.$refs.td[item].offsetHeight;
         });
+        inputWidthArr.forEach((item) => {
+          widthValue += this.$refs.td[item].offsetWidth;
+        });
+        inputHeightArr.forEach((item) => {
+          heightValue += this.$refs.td[item].offsetHeight;
+        });
         prevWidthList.forEach((item) => {
           prevWidthValue += this.$refs.td[item].offsetWidth;
         });
@@ -521,15 +555,20 @@ export default {
         });
       }
 
-      this.switchLeft = this.$refs.td[474].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-      this.switchTop = this.$refs.td[474].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
-      this.prevLeft = this.$refs.td[360].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-      this.prevTop = this.$refs.td[360].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
-      this.nextLeft = this.$refs.td[450].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-      this.nextTop = this.$refs.td[450].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.switchLeft = this.$refs.td[444].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.switchTop = this.$refs.td[444].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.inputLeft = this.$refs.td[447].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.inputTop = this.$refs.td[447].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.prevLeft = this.$refs.td[450].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.prevTop = this.$refs.td[450].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.nextLeft = this.$refs.td[453].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.nextTop = this.$refs.td[453].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
       this.switchWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
       this.switchHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
+      
+      this.inputWidth = inputWidthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
+      this.inputHeight = inputHeightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
       
       this.prevWidth = prevWidthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
       this.prevHeight = prevHeightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
@@ -841,6 +880,11 @@ export default {
 }
 
 .switch-area {
+  position: absolute;
+  z-index: 1;
+}
+
+.input-area {
   position: absolute;
   z-index: 1;
 }
