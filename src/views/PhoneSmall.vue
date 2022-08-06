@@ -31,7 +31,10 @@
                 :style="isFullScreen ? { opacity: 0 } : td.style"
                 @click="(event) => mousedown(event, td)"
               >
-                {{ td.font }}
+                <span v-if="td.font === ''" style="visibility: hidden"
+                  >占</span
+                >
+                <span v-else>{{td.font}}</span>
               </td>
             </tr>
           </tbody>
