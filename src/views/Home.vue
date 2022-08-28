@@ -360,7 +360,7 @@ export default {
     computedArea() {
 
       let widthArr = [];
-      for (let i = 37; i < 89; i++) {
+      for (let i = 42; i < 86; i++) {
         widthArr.push(i);
       }
 
@@ -369,9 +369,9 @@ export default {
         widthValue += this.$refs.td[item].getBoundingClientRect().width;
       });
 
-      let heightArr = [37];
-      for (let i = 1; i < 29; i++) {
-        heightArr.push(37 + i * 129);
+      let heightArr = [42];
+      for (let i = 1; i < 24; i++) {
+        heightArr.push(42 + i * 129);
       }
       let heightValue = 0;
       heightArr.forEach((item) => {
@@ -384,10 +384,10 @@ export default {
       this.$refs.airArea.style.width = this.airWidth + "px"; // (并且赋值)
       this.$refs.airArea.style.height = this.airHeight + "px"; // 计算图片区的高度(并且赋值)
 
-      this.airLeft = this.$refs.td[37].offsetLeft; // 计算图片区距离页面最左的距离
+      this.airLeft = this.$refs.td[42].offsetLeft; // 计算图片区距离页面最左的距离
       this.$refs.airArea.style.left = this.airLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
 
-      this.airTop = this.$refs.td[37].offsetTop; // 计算距离页面顶部的距离
+      this.airTop = this.$refs.td[42].offsetTop; // 计算距离页面顶部的距离
       this.$refs.airArea.style.top = this.airTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
 

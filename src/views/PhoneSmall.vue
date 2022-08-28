@@ -448,8 +448,8 @@ export default {
 
     // 计算空白图片区 （横屏）
     computedArea(shuHeng) {
-      const widthArr = [9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
-      const heightArr = [9, 39, 69, 99, 129, 159];
+      const widthArr = [10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21];
+      const heightArr = [10, 40, 70, 100, 130, 160];
 
       let widthValue = 0;
       let heightValue = 0;
@@ -470,8 +470,8 @@ export default {
           heightValue += this.$refs.td[item].offsetHeight;
         });
       }
-      this.airLeft = this.$refs.td[9].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
-      this.airTop = this.$refs.td[9].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
+      this.airLeft = this.$refs.td[10].offsetLeft + "px"; // 计算图片区距离页面最左的距离（赋值操作）+3 是为了适应图片区的Border
+      this.airTop = this.$refs.td[10].offsetTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
       this.airWidth = widthValue + "px"; // (并且赋值) -3 是为了适应图片区的Border
       this.airHeight = heightValue + "px"; // 计算图片区的高度(并且赋值) -3 是为了适应图片区的Border
