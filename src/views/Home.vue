@@ -51,21 +51,20 @@
               >
                 <tbody>
                   <tr ref="tr" v-for="(tr, index) in dataTable" :data-trindex="index" :key="index">
-                    <template v-for="(td) in tr">
-                      <td
-                        @click="clickTdChildItem(td)"
-                        :key="td._id"
-                        :data-index="td.index"
-                        ref="td"
-                        :style="`${td.style};`"
-                        @mousedown.right="mousedown(td)"
+                    <td
+                      v-for="(td) in tr"
+                      @click="clickTdChildItem(td)"
+                      :key="td._id"
+                      :data-index="td.index"
+                      ref="td"
+                      :style="isFullScreen ? { opacity: 0 } : `${td.style};`"
+                      @mousedown.right="mousedown(td)"
+                    >
+                      <span v-if="td.font === ''" style="visibility: hidden"
+                        >占</span
                       >
-                        <span v-if="td.font === ''" style="visibility: hidden"
-                          >占</span
-                        >
-                        <span v-else>{{ td.font }}</span>
-                      </td>
-                    </template>
+                      <span v-else>{{ td.font }}</span>
+                    </td>
                   </tr>
                 </tbody>
               </table>
@@ -76,6 +75,11 @@
               class="air-area"
               ref="airArea"
               :style="{
+                width: isFullScreen ? `${fullScreenW}px` : `${airWidth}px`,
+                height: isFullScreen ? `${fullScreenH}px` : `${airHeight}px`,
+                top: isFullScreen ? 0 : airTop + 'px',
+                left: isFullScreen ? 0 : airLeft + 'px',
+                bottom: isFullScreen ? 0 : airBottom + 'px',
                 zIndex: isVideoSources ? 0 : -1,
                 backgroundImage: 'url(' + (isVideoSources ? '' : imgSrc) + ')',
                 backgroundSize: 'cover',
@@ -90,6 +94,7 @@
 
             <button :disabled="preDisabled" @click="handlePrevNext('prev')" ref="prevBtn" class="handle-btn">上页</button>
             <button :disabled="nextDisabled" @click="handlePrevNext('next')" ref="nextBtn" class="handle-btn">下页</button>
+            <button ref="screenBtn" @click="hanndleSwitchArea" class="handle-btn">全屏</button>
           </foreignObject>
 
           <!-- 连线 -->
@@ -163,6 +168,15 @@ export default {
       scrolled: false, // 监听是否滚动
       scrollY: 0, // 滚动数值
       scrollX: 0,
+
+      isFullScreen: false,
+      fullScreenH: 0,
+      fullScreenW: 0,
+      airWidth: 0,
+      airHeight: 0,
+      airTop: 0,
+      airLeft: 0,
+      airBottom: 0,
 
       relationline: [],
       activeItem: "",
@@ -265,6 +279,14 @@ export default {
           info: item
         }).then(() => resolve())
       })
+    },
+
+    hanndleSwitchArea () {
+      this.isFullScreen = !this.isFullScreen;
+
+      const { clientWidth, clientHeight } =  document.querySelector('table')
+      this.fullScreenW = clientWidth
+      this.fullScreenH = clientHeight
     },
 
     handlePrevNext(flagStr) {
@@ -391,15 +413,20 @@ export default {
       this.$refs.airArea.style.top = this.airTop + "px"; // 计算图片区距离页面最顶的距离（赋值操作） +3 是为了适应图片区的Border
 
 
-      this.$refs.prevBtn.style.width = this.$refs.td[4501].getBoundingClientRect().width + this.$refs.td[4502].getBoundingClientRect().width + 'px';
-      this.$refs.prevBtn.style.height = this.$refs.td[4501].getBoundingClientRect().height; + 'px';
-      this.$refs.prevBtn.style.left = this.$refs.td[4501].offsetLeft + 'px';
-      this.$refs.prevBtn.style.top = this.$refs.td[4501].offsetTop + 'px';
+      this.$refs.prevBtn.style.width = this.$refs.td[9166].getBoundingClientRect().width + this.$refs.td[9167].getBoundingClientRect().width + 1 + 'px';
+      this.$refs.prevBtn.style.height = this.$refs.td[9166].getBoundingClientRect().height + 'px';
+      this.$refs.prevBtn.style.left = this.$refs.td[9166].offsetLeft + 'px';
+      this.$refs.prevBtn.style.top = this.$refs.td[9166].offsetTop + 'px';
 
-      this.$refs.nextBtn.style.width = this.$refs.td[4504].getBoundingClientRect().width + this.$refs.td[4505].getBoundingClientRect().width + 'px';
-      this.$refs.nextBtn.style.height = this.$refs.td[4504].getBoundingClientRect().height; + 'px';
-      this.$refs.nextBtn.style.left = this.$refs.td[4504].offsetLeft + 'px';
-      this.$refs.nextBtn.style.top = this.$refs.td[4504].offsetTop + 'px';
+      this.$refs.nextBtn.style.width = this.$refs.td[9179].getBoundingClientRect().width + this.$refs.td[9180].getBoundingClientRect().width + 'px';
+      this.$refs.nextBtn.style.height = this.$refs.td[9179].getBoundingClientRect().height + 'px';
+      this.$refs.nextBtn.style.left = this.$refs.td[9179].offsetLeft + 'px';
+      this.$refs.nextBtn.style.top = this.$refs.td[9179].offsetTop + 'px';
+      
+      this.$refs.screenBtn.style.width = this.$refs.td[9280].getBoundingClientRect().width + this.$refs.td[9281].getBoundingClientRect().width + 1 + 'px';
+      this.$refs.screenBtn.style.height = this.$refs.td[9280].getBoundingClientRect().height + 'px';
+      this.$refs.screenBtn.style.left = this.$refs.td[9280].offsetLeft + 'px';
+      this.$refs.screenBtn.style.top = this.$refs.td[9280].offsetTop + 'px';
     },
 
     handleScroll() {
@@ -724,12 +751,14 @@ export default {
   color: green;
   background-color: yellow;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .font-item > a.active_relation {
   color: red;
   background-color: skyblue;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 line {
@@ -740,18 +769,21 @@ line {
   color: green;
   background-color: #00ff00;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .table td.active.re-active {
   color: green;
   background-color: #00ff00;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .table td.re-active {
   color: fuchsia;
   background-color: MediumSpringGreen;
   border-radius: 2px;
+  opacity: 1 !important;
 }
 
 .progress {
