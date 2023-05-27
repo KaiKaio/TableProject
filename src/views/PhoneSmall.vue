@@ -31,7 +31,7 @@
                 :style="isFullScreen ? { opacity: 0 } : td.style"
                 @click="(event) => mousedown(event, td)"
               >
-                {{ td.font }}
+                <span :style="computedStyle(td)">{{ td.font || '空' }}</span>
               </td>
             </tr>
           </tbody>
@@ -236,7 +236,7 @@ export default {
   computed: {
     ...mapState({
       queryFont: (state) => state.queryFont,
-    }),
+    })
   },
 
   created() {
@@ -329,6 +329,14 @@ export default {
   },
 
   methods: {
+    computedStyle (td) {
+      if (!td.font) {
+        return {
+          visibility: 'hidden'
+        }
+      }
+    },
+
     popstate() {
       const { to } = this.routeInfo;
       const toQuery = to?.query?.font || "";
@@ -558,7 +566,9 @@ export default {
       this.clickFont.push(index);
 
       // === 处理点击字 Start ===
+      
       this.$refs.td[index].className = "active"; // 1. 高亮点击字;
+
       this.customBgColorList.push({
         // 2. 存入所点击字初始化自定义背景色;
         index,
@@ -677,6 +687,10 @@ export default {
      * @param {Array} changelist 所需变字列表
      */
     changeFont(changeList = []) {
+      this.changeStorage.reverse().forEach((item) => {
+        this.dataTable[item.trLine][item.tdCol].font = item.font;
+      });
+
       changeList.map((item) => {
         // 改变字体
         let index = item.index;
