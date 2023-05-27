@@ -11,7 +11,11 @@ import 'v-contextmenu/dist/index.css'
 Vue.use(contentmenu)
 
 import axios from 'axios'
-Vue.prototype.$axios = axios
+const service = axios.create({ 
+  // baseURL: 'http://localhost:3000/api',
+  baseURL: 'http://www.dooor.com/api',
+});
+Vue.prototype.$axios = service
 
 new Vue({
   router,
