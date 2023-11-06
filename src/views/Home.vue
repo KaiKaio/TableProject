@@ -266,8 +266,8 @@ export default {
         this.computedArea(); // 计算图片区
         this.fetchQuery(); // 执行Query操作
       });
-    }).catch((err) => {
-      console.error(err, 'Error')
+    }).catch(() => {
+      // console.error(err, 'Error')
     });
   },
 
@@ -487,7 +487,7 @@ export default {
           }
         }).then((res) => {
           const { info = '', data: { code } = {}, data = {} } = res;
-          console.log({ code })
+          // console.log({ code })
           if (code !== 0) {
             this.dataTable = info
             this.uploadProgress('100')
@@ -499,7 +499,7 @@ export default {
           this.dataTable = list
 
           this.saveItemToIndexDB(list).then(() => {
-            console.log('SAVE SUCCESS');
+            // console.log('SAVE SUCCESS');
             resolve("获取成功");
           })
         }).catch((err) => reject(err));
