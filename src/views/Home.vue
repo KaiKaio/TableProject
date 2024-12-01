@@ -1,5 +1,7 @@
 <template>
   <div class="home">
+    <div id="copy-text" style="opacity: 0; position: fixed; top: -999px; left: -999px;">{{ copyText }}</div>
+
     <transition-group name="fade-transform" mode="out-in">
       <!-- 加载中 -->
       <template v-if="!loadComplete">
@@ -150,6 +152,7 @@
         <v-contextmenu key="menu" ref="contextmenu">
           <v-contextmenu-item @click="openLink">打开超链接</v-contextmenu-item>
           <v-contextmenu-item @click="clear">清除已选数据</v-contextmenu-item>
+          <v-contextmenu-item @click="handleCopyContent">复制到剪贴板</v-contextmenu-item>
           <v-contextmenu-item>取消</v-contextmenu-item>
         </v-contextmenu>
       </template>
@@ -199,7 +202,9 @@ export default {
       clickFont: [],
 
       // 组合键返回数据
-      combination: [],
+      combination: {},
+
+      copyText: " ",
 
       // 右键选中的Td
       rightClickTd: "",
@@ -456,7 +461,7 @@ export default {
       this.lineArr = [];
       this.clickFont = [];
       this.queryLinkFont = [];
-      this.combination = "";
+      this.combination = {};
       // 重置变字
       this.changeStorage.reverse().forEach((item) => {
         this.dataTable[item.trLine][item.tdCol].font = item.font;
@@ -569,6 +574,64 @@ export default {
       }
     },
 
+    recursiveContentBuilder({ curIndex, relation, content = '' }) {
+      const isFindNextTag = relation.find((relaItem) => {
+        return (relaItem.index === curIndex && relaItem.to === curIndex + 1)
+      });
+
+      if (!isFindNextTag) {
+        return content
+      }
+
+      content += this.$refs.td[isFindNextTag.to].innerText;
+
+      // 递归调用，更新索引继续查找下一个符合条件的元素并添加内容
+      content = this.recursiveContentBuilder({ curIndex: isFindNextTag.to, relation, content });
+
+      return content;
+    },
+
+    handleCopyContent ()  {
+      const { relation } = this.combination;
+
+      if (!relation?.length) {
+        this.copyText = ' '
+        this.handleTextAreaCopy()
+        return
+      }
+
+      const content = []
+      this.clickFont.forEach((curIndex) => {
+        const initText = this.$refs.td[curIndex].innerText
+        const result = this.recursiveContentBuilder({ curIndex, relation, content: initText })
+        content.push(result)
+      })
+
+      const copyFilter = content.filter((item) => item.length > 1)
+
+      this.copyText = copyFilter.join(' ')
+      this.handleTextAreaCopy()
+    },
+
+    handleTextAreaCopy () {
+      this.$nextTick(async () => {
+        const copyTextInnerHTML = document.getElementById("copy-text").innerHTML;
+        
+        // 创建一个临时的textarea元素用于复制操作
+        const textareaDom = document.createElement('textarea');
+        textareaDom.value = copyTextInnerHTML;
+        document.body.appendChild(textareaDom);
+        // 选中textarea中的内容
+        textareaDom.select();
+        // 执行复制命令
+        document.execCommand('copy');
+        // 移除临时创建的textarea元素
+        document.body.removeChild(textareaDom);
+
+        alert("内容已复制到剪贴板！");
+      })
+    },
+
     handleRelation(relation) {
       relation.forEach((item) => {
         // 将 `Relaiton` 字段的每一个字存入 ActiveFonts 数组变量当中
@@ -592,7 +655,7 @@ export default {
         data: { data },
       } = secondResult;
       if (data.length > 0) {
-        this.combination = data[0];
+        this.combination = data?.[0] || {};
         const { change, img, relation } = this.combination;
         this.changeFont(change); // 执行变字逻辑
         this.changeImgUrl(img); // 赋值显示图片
@@ -612,8 +675,8 @@ export default {
         this.imgSrc = imgUrl || "";
       }
 
-      const pointIndex = imgUrl.lastIndexOf(".");
-      const fileType = imgUrl.substring(pointIndex);
+      const pointIndex = imgUrl?.lastIndexOf(".") || 0;
+      const fileType = imgUrl?.substring(pointIndex) || '';
       if(fileType === ".mp4" || fileType === ".rmvb" || fileType === ".avi" || fileType === ".ts") {
         this.isVideoSources = true;
       } else {
