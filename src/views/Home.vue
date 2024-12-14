@@ -609,7 +609,7 @@ export default {
 
       const copyFilter = content.filter((item) => item.length > 1)
 
-      this.copyText = copyFilter.join(' ')
+      this.copyText = copyFilter.join('')
       this.handleTextAreaCopy()
     },
 
@@ -628,7 +628,7 @@ export default {
         // 移除临时创建的textarea元素
         document.body.removeChild(textareaDom);
 
-        alert("内容已复制到剪贴板！");
+        // alert("内容已复制到剪贴板！");
       })
     },
 
