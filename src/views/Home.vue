@@ -9,7 +9,7 @@
           key="load"
           style="width: 99vw; height: 99vh; margin: 0 auto; text-align: center"
         >
-          <h1 style="font-size: 3rem; line-height: initial">www.dooor.com</h1>
+          <h1 style="font-size: 3rem; line-height: initial">www.dooor.cn</h1>
           <div style="line-height: initial; font-size: rem">
             请等待，数据正在加载中...
           </div>
